@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>3D Battle Arena</title>
+  <style>
+    body { margin: 0; }
+    canvas { display: block; }
+    #toggleCameraButton, #fireButton, #autoFireButton, #restartButton {
+      position: absolute;
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    #toggleCameraButton { bottom: 20px; left: 20px; }
+    #fireButton { bottom: 20px; right: 300px; display: none; }
+    #autoFireButton { bottom: 20px; right: 160px; display: none; }
+    #restartButton { top: 50%; left: 50%; transform: translate(-50%, 50%); display: none; }
+    #toggleCameraButton:hover, #fireButton:hover, #autoFireButton:hover, #restartButton:hover { background-color: #45a049; }
+    #joystickContainer {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 100px;
+    }
+    #minimap {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 250px; /* Increased from 150px */
+      height: 250px; /* Increased from 150px */
+      opacity: 0.7;
+      background-color: rgba(0, 0, 0, 0.5);
+      border: 1px solid white;
+    }
+    #stats {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 5px;
+      border-radius: 5px;
+    }
+    #timer {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-family: Arial, sans-serif;
+      font-size: 20px;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 5px 10px;
+      border-radius: 5px;
+    }
+    #flashMessage {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: yellow;
+      font-family: Arial, sans-serif;
+      font-size: 24px;
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 10px 20px;
+      border-radius: 5px;
+      display: none;
+    }
+    #gameOverScreen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      color: red;
+      font-family: Arial, sans-serif;
+      font-size: 48px;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    #welcomeScreen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    #welcomeScreen h1 {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+    #startButton {
+      padding: 15px 30px;
+      font-size: 24px;
+      cursor: pointer;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    #startButton:hover {
+      background-color: #45a049;
+    }
+    #lightingSliderContainer, #cameraDistanceSliderContainer {
+      position: absolute;
+      left: 10px;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 5px;
+    }
+    #lightingSliderContainer { top: 170px; }
+    #cameraDistanceSliderContainer { top: 230px; }
+    #lightingSlider, #cameraDistanceSlider {
+      width: 100px;
+    }
+  </style>
+</head>
+<body>
+  <div id="welcomeScreen">
+    <h1>3D Battle Arena</h1>
+    <button id="startButton">Start Game</button>
+  </div>
+  <button id="toggleCameraButton">Toggle Camera</button>
+  <button id="fireButton">Fire Gun</button>
+  <button id="autoFireButton">Toggle Auto-Fire</button>
+  <button id="restartButton">Restart Game</button>
+  <div id="joystickContainer"></div>
+  <canvas id="minimap"></canvas>
+  <div id="stats"></div>
+  <div id="timer">120</div>
+  <div id="flashMessage"></div>
+  <div id="gameOverScreen">Game Over</div>
+  <div id="lightingSliderContainer">
+    <label for="lightingSlider" style="color: white;">Ambient Light</label>
+    <input type="range" id="lightingSlider" min="0" max="5" step="0.1" value="0.5">
+  </div>
+  <div id="cameraDistanceSliderContainer">
+    <label for="cameraDistanceSlider" style="color: white;">Camera Distance</label>
+    <input type="range" id="cameraDistanceSlider" min="2" max="10" step="0.1" value="7">
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/nipplejs@0.9.0/dist/nipplejs.min.js"></script>
+  <script>
+    const scene = new THREE.Scene();
+    const mainCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const playerCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    let activeCamera = mainCamera;
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    directionalLight.position.set(0, 10, 10);
+    scene.add(directionalLight);
+
+    const floorGeometry = new THREE.PlaneGeometry(100, 100);
+    const floorMaterial = new THREE.MeshStandardMaterial({
+      color: 0x1a1a1a,
+      metalness: 0.8,
+      roughness: 0.2,
+      envMapIntensity: 1.0
+    });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    scene.add(floor);
+
+    const gridGeometry = new THREE.BufferGeometry();
+    const gridVertices = [];
+    const gridSize = 100;
+    const cellSize = 5;
+    for (let i = -gridSize / 2; i <= gridSize / 2; i += cellSize) {
+      gridVertices.push(i, 0.01, -gridSize / 2, i, 0.01, gridSize / 2);
+      gridVertices.push(-gridSize / 2, 0.01, i, gridSize / 2, 0.01, i);
+    }
+    gridGeometry.setAttribute('position', new THREE.Float32BufferAttribute(gridVertices, 3));
+    const gridMaterial = new THREE.LineBasicMaterial({ color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 0.5 });
+    const grid = new THREE.LineSegments(gridGeometry, gridMaterial);
+    scene.add(grid);
+
+    const borderGeometry = new THREE.BufferGeometry();
+    const borderVertices = new Float32Array([
+      -50, 0.1, -50,  50, 0.1, -50,
+       50, 0.1, -50,  50, 0.1,  50,
+       50, 0.1,  50, -50, 0.1,  50,
+      -50, 0.1,  50, -50, 0.1, -50
+    ]);
+    borderGeometry.setAttribute('position', new THREE.BufferAttribute(borderVertices, 3));
+    const borderMaterial = new THREE.LineBasicMaterial({ color: 0x00ffff, linewidth: 3 });
+    const border = new THREE.Line(borderGeometry, borderMaterial);
+    scene.add(border);
+
+    const starGeometry = new THREE.BufferGeometry();
+    const starCount = 10000;
+    const starPositions = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+      starPositions[i * 3] = (Math.random() - 0.5) * 2000;
+      starPositions[i * 3 + 1] = (Math.random() - 0.5) * 2000;
+      starPositions[i * 3 + 2] = (Math.random() - 0.5) * 2000;
+    }
+    starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 2, sizeAttenuation: true });
+    const starField = new THREE.Points(starGeometry, starMaterial);
+    scene.add(starField);
+
+    const boxes = [];
+    for (let i = 0; i < 10; i++) {
+      const boxGeometry = new THREE.BoxGeometry(2, 2, 2);
+      const boxMaterial = new THREE.MeshStandardMaterial({
+        color: 0x00ff00,
+        emissive: 0x00ff00,
+        emissiveIntensity: 0.2,
+        transparent: true,
+        opacity: 0.5,
+        metalness: 0.2,
+        roughness: 0.8
+      });
+      const box = new THREE.Mesh(boxGeometry, boxMaterial);
+      box.position.set((Math.random() - 0.5) * 80, 1, (Math.random() - 0.5) * 80);
+      const edges = new THREE.EdgesGeometry(boxGeometry);
+      const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+      const outline = new THREE.LineSegments(edges, lineMaterial);
+      box.add(outline);
+      box.userData.boundingBox = new THREE.Box3().setFromObject(box);
+      scene.add(box);
+      boxes.push(box);
+    }
+    for (let i = 0; i < 10; i++) {
+      const boxGeometry = new THREE.BoxGeometry(2, 2, 2);
+      const boxMaterial = new THREE.MeshStandardMaterial({
+        color: 0xff0000,
+        emissive: 0xff0000,
+        emissiveIntensity: 0.2,
+        transparent: true,
+        opacity: 0.5,
+        metalness: 0.2,
+        roughness: 0.8
+      });
+      const box = new THREE.Mesh(boxGeometry, boxMaterial);
+      box.position.set((Math.random() - 0.5) * 80, 1, (Math.random() - 0.5) * 80);
+      const edges = new THREE.EdgesGeometry(boxGeometry);
+      const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+      const outline = new THREE.LineSegments(edges, lineMaterial);
+      box.add(outline);
+      box.userData.boundingBox = new THREE.Box3().setFromObject(box);
+      scene.add(box);
+      boxes.push(box);
+    }
+    for (let i = 0; i < 10; i++) {
+      const boxGeometry = new THREE.BoxGeometry(2, 2, 2);
+      const boxMaterial = new THREE.MeshStandardMaterial({
+        color: 0x0000ff,
+        emissive: 0x0000ff,
+        emissiveIntensity: 0.2,
+        transparent: true,
+        opacity: 0.5,
+        metalness: 0.2,
+        roughness: 0.8
+      });
+      const box = new THREE.Mesh(boxGeometry, boxMaterial);
+      box.position.set((Math.random() - 0.5) * 80, 1, (Math.random() - 0.5) * 80);
+      const edges = new THREE.EdgesGeometry(boxGeometry);
+      const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+      const outline = new THREE.LineSegments(edges, lineMaterial);
+      box.add(outline);
+      box.userData.boundingBox = new THREE.Box3().setFromObject(box);
+      scene.add(box);
+      boxes.push(box);
+    }
+
+    const flagGeometry = new THREE.PlaneGeometry(3, 2, 32, 32);
+    const redFlagMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide });
+    const blueFlagMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff, side: THREE.DoubleSide });
+
+    const redFlag = new THREE.Mesh(flagGeometry, redFlagMaterial);
+    const blueFlag = new THREE.Mesh(flagGeometry, blueFlagMaterial);
+    redFlag.position.set(-20, 1.5, 0);
+    blueFlag.position.set(20, 1.5, 0);
+    redFlag.rotation.y = Math.PI / 2;
+    blueFlag.rotation.y = Math.PI / 2;
+    redFlag.userData = { team: 'red', isCaptured: false, carrier: null };
+    blueFlag.userData = { team: 'blue', isCaptured: false, carrier: null };
+    scene.add(redFlag, blueFlag);
+
+    let player, mixer, walkAction, runAction, currentAction, gun;
+    let isPlayerAlive = true;
+    let isAutoFire = false;
+    let isFiring = false;
+    let autoFireTimer = 0;
+    let gameTime = 120;
+    let gameOver = false;
+    let gameStarted = false;
+    const redTeam = [];
+    const blueTeam = [];
+    const collectibles = [];
+    const projectiles = [];
+    const particles = [];
+    const energyBars = [];
+    let gunsCollected = 0;
+    let energyCollected = 0;
+    let shieldsCollected = 0;
+    let redTeamKills = 0;
+    let blueTeamKills = 0;
+    let redTeamCaptures = 0;
+    let blueTeamCaptures = 0;
+    const loader = new THREE.GLTFLoader();
+    const modelUrl = 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/gltf/Soldier.glb';
+
+    function createGun() {
+      const gunGroup = new THREE.Group();
+      const bodyGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.6, 16);
+      const barrelGeometry = new THREE.CylinderGeometry(0.04, 0.04, 0.4, 16);
+      const handleGeometry = new THREE.BoxGeometry(0.12, 0.24, 0.16);
+      const material = new THREE.MeshStandardMaterial({ 
+        color: 0x333333, 
+        metalness: 0.8, 
+        roughness: 0.2, 
+        emissive: 0xffffff, 
+        emissiveIntensity: 1.0 
+      });
+
+      const body = new THREE.Mesh(bodyGeometry, material);
+      const barrel = new THREE.Mesh(barrelGeometry, material);
+      const handle = new THREE.Mesh(handleGeometry, material);
+
+      body.rotation.x = Math.PI / 2;
+      barrel.rotation.x = Math.PI / 2;
+      barrel.position.z = 0.5;
+      handle.position.set(0, -0.16, -0.08);
+
+      gunGroup.add(body, barrel, handle);
+      gunGroup.rotation.y = Math.PI;
+      return gunGroup;
+    }
+
+    function createHeartGeometry() {
+      const shape = new THREE.Shape();
+      shape.moveTo(0, 0.4);
+      shape.quadraticCurveTo(-0.4, 0.4, -0.4, 0);
+      shape.quadraticCurveTo(-0.4, -0.4, 0, -0.8);
+      shape.quadraticCurveTo(0.4, -0.4, 0.4, 0);
+      shape.quadraticCurveTo(0.4, 0.4, 0, 0.4);
+      const extrudeSettings = { depth: 0.2, bevelEnabled: false };
+      return new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    }
+
+    function createShieldGeometry() {
+      const shape = new THREE.Shape();
+      const radius = 0.5;
+      const segments = 6;
+      for (let i = 0; i < segments; i++) {
+        const theta = (i / segments) * Math.PI * 2;
+        const x = radius * Math.cos(theta);
+        const y = radius * Math.sin(theta);
+        if (i === 0) shape.moveTo(x, y);
+        else shape.lineTo(x, y);
+      }
+      shape.closePath();
+      const extrudeSettings = { depth: 0.1, bevelEnabled: false };
+      return new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    }
+
+    function createCollectibles() {
+      collectibles.length = 0;
+      for (let i = 0; i < 12; i++) {
+        const type = collectibleTypes[i % 3];
+        let collectible;
+        if (type.name === 'Gun') {
+          collectible = createGun();
+          collectible.scale.set(1.5, 1.5, 1.5);
+          collectible.rotation.y = 0;
+        } else {
+          collectible = new THREE.Mesh(type.geometry, type.material);
+          collectible.scale.set(type.name === 'Energy' ? 4 : 2, type.name === 'Energy' ? 4 : 2, type.name === 'Energy' ? 4 : 2);
+          collectible.userData.throbTime = Math.random() * Math.PI * 2;
+        }
+        let validPosition = false;
+        let position;
+        while (!validPosition) {
+          position = new THREE.Vector3((Math.random() - 0.5) * 50, type.name === 'Energy' ? 4 : 3, (Math.random() - 0.5) * 50);
+          validPosition = true;
+          for (let box of boxes) {
+            if (position.distanceTo(box.position) < 3) {
+              validPosition = false;
+              break;
+            }
+          }
+        }
+        collectible.position.copy(position);
+        collectible.userData = { type: type.name };
+        collectible.visible = true;
+        scene.add(collectible);
+        collectibles.push(collectible);
+      }
+    }
+
+    function createEnergyProgressBar(playerData) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 8;
+      const ctx = canvas.getContext('2d');
+
+      const energyPercent = playerData.energy / 100;
+      ctx.fillStyle = playerData.team === 'blue' ? '#00f' : '#f00';
+      ctx.globalAlpha = playerData.model === player ? 0.7 : 1.0;
+      ctx.fillRect(0, 0, canvas.width * energyPercent, canvas.height);
+      ctx.globalAlpha = 1.0;
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+      const progressBar = new THREE.Sprite(material);
+      progressBar.scale.set(0.5, 0.125, 1);
+      progressBar.position.set(0, 2, 0);
+      playerData.model.add(progressBar);
+      playerData.energyBar = { sprite: progressBar, canvas, ctx };
+      energyBars.push(playerData);
+    }
+
+    function updateEnergyProgressBar(playerData) {
+      const { canvas, ctx, sprite } = playerData.energyBar;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const energyPercent = playerData.energy / 100;
+      ctx.fillStyle = playerData.team === 'blue' ? '#00f' : '#f00';
+      ctx.globalAlpha = playerData.model === player ? 0.7 : 1.0;
+      ctx.fillRect(0, 0, canvas.width * energyPercent, canvas.height);
+      ctx.globalAlpha = 1.0;
+      sprite.material.map.needsUpdate = true;
+    }
+
+    function createBloodEffect(position) {
+      const particleCount = 10;
+      const particleGeometry = new THREE.SphereGeometry(0.05, 8, 8);
+      const particleMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+
+      for (let i = 0; i < particleCount; i++) {
+        const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+        particle.position.copy(position);
+        particle.userData = {
+          velocity: new THREE.Vector3((Math.random() - 0.5) * 0.3, Math.random() * 0.3, (Math.random() - 0.5) * 0.3),
+          lifetime: 0.5
+        };
+        scene.add(particle);
+        particles.push(particle);
+      }
+    }
+
+    loader.load(
+      modelUrl,
+      (gltf) => {
+        player = gltf.scene;
+        player.scale.set(3.5, 3.5, 3.5);
+        let validPosition = false;
+        let startPosition;
+        while (!validPosition) {
+          startPosition = new THREE.Vector3(20, 0, (Math.random() - 0.5) * 50);
+          validPosition = true;
+          for (let box of boxes) {
+            if (startPosition.distanceTo(box.position) < 3) {
+              validPosition = false;
+              break;
+            }
+          }
+        }
+        player.position.copy(startPosition);
+        player.traverse((child) => {
+          if (child.isMesh) {
+            child.material = child.material.clone();
+            child.material.transparent = true;
+            child.material.opacity = 0.5;
+            child.material.emissive.setHex(0x000000);
+            child.material.emissiveIntensity = 0;
+          }
+        });
+        scene.add(player);
+
+        mixer = new THREE.AnimationMixer(player);
+        const animations = gltf.animations;
+        walkAction = mixer.clipAction(animations.find(anim => anim.name === 'Walk') || animations[0]);
+        runAction = mixer.clipAction(animations.find(anim => anim.name === 'Run') || animations[0]);
+        walkAction.setLoop(THREE.LoopRepeat);
+        runAction.setLoop(THREE.LoopRepeat);
+        walkAction.play().paused = true;
+        runAction.play().paused = true;
+        currentAction = walkAction;
+        const playerData = {
+          model: player,
+          mixer,
+          velocity: new THREE.Vector3(0, 0, 0),
+          gun: null,
+          team: 'blue',
+          boundingBox: new THREE.Box3(),
+          energy: 100,
+          targetPosition: null,
+          hasShield: false,
+          originalMaterials: [],
+          shieldPulseTime: 0,
+          carriedFlag: null
+        };
+        player.traverse((child) => {
+          if (child.isMesh) playerData.originalMaterials.push(child.material.clone());
+        });
+        blueTeam.push(playerData);
+        createEnergyProgressBar(playerData);
+
+        for (let i = 0; i < 9; i++) {
+          loader.load(
+            modelUrl,
+            (gltf) => {
+              const npc = gltf.scene;
+              npc.scale.set(3.5, 3.5, 3.5);
+              const isRedTeam = i < 5;
+              let validNpcPosition = false;
+              let npcPosition;
+              while (!validNpcPosition) {
+                npcPosition = new THREE.Vector3(isRedTeam ? -20 : 20, 0, (Math.random() - 0.5) * 50);
+                validNpcPosition = true;
+                for (let box of boxes) {
+                  if (npcPosition.distanceTo(box.position) < 3) {
+                    validNpcPosition = false;
+                    break;
+                  }
+                }
+              }
+              npc.position.copy(npcPosition);
+              npc.traverse((child) => {
+                if (child.isMesh) {
+                  child.material = child.material.clone();
+                  child.material.transparent = true;
+                  child.material.opacity = 0.5;
+                  child.material.emissive.setHex(0x000000);
+                  child.material.emissiveIntensity = 0;
+                }
+              });
+              scene.add(npc);
+
+              const npcMixer = new THREE.AnimationMixer(npc);
+              const npcWalk = npcMixer.clipAction(animations.find(anim => anim.name === 'Walk') || animations[0]);
+              const npcRun = npcMixer.clipAction(animations.find(anim => anim.name === 'Run') || animations[0]);
+              npcWalk.setLoop(THREE.LoopRepeat);
+              npcRun.setLoop(THREE.LoopRepeat);
+              npcWalk.play();
+              npcRun.play().paused = true;
+
+              const npcData = {
+                model: npc,
+                mixer: npcMixer,
+                velocity: new THREE.Vector3((Math.random() - 0.5) * 0.05, 0, (Math.random() - 0.5) * 0.05),
+                changeDirectionTime: Math.random() * 5,
+                gun: null,
+                team: isRedTeam ? 'red' : 'blue',
+                boundingBox: new THREE.Box3(),
+                energy: 100,
+                targetPosition: null,
+                currentAction: npcWalk,
+                runAction: npcRun,
+                hasShield: false,
+                originalMaterials: [],
+                shieldPulseTime: Math.random() * Math.PI * 2,
+                isFiring: false,
+                carriedFlag: null
+              };
+              npc.traverse((child) => {
+                if (child.isMesh) npcData.originalMaterials.push(child.material.clone());
+              });
+              if (isRedTeam) redTeam.push(npcData);
+              else blueTeam.push(npcData);
+              createEnergyProgressBar(npcData);
+            },
+            undefined,
+            (error) => {
+              console.error('Error loading NPC model:', error);
+              if (gameStarted) showFlashMessage('Failed to load NPC model.');
+            }
+          );
+        }
+        createCollectibles();
+      },
+      undefined,
+      (error) => {
+        console.error('Error loading player model:', error);
+        if (gameStarted) showFlashMessage('Failed to load player model.');
+      }
+    );
+
+    const collectibleTypes = [
+      { name: 'Gun', geometry: null, material: new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8, roughness: 0.2, emissive: 0xffffff, emissiveIntensity: 1.0 }) },
+      { name: 'Energy', geometry: createHeartGeometry(), material: new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide, transparent: false, opacity: 1.0 }) },
+      { name: 'Shield', geometry: createShieldGeometry(), material: new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide }) }
+    ];
+
+    const flashMessage = document.getElementById('flashMessage');
+    function showFlashMessage(text, duration = 2000) {
+      flashMessage.textContent = text;
+      flashMessage.style.display = 'block';
+      setTimeout(() => flashMessage.style.display = 'none', duration);
+    }
+
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const restartButton = document.getElementById('restartButton');
+    function showGameOver(message = 'Game Over') {
+      gameOverScreen.textContent = message;
+      gameOverScreen.style.display = 'flex';
+      restartButton.style.display = 'block';
+      gameOver = true;
+    }
+
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    const startButton = document.getElementById('startButton');
+    let startButtonThrobTime = 0;
+
+    startButton.addEventListener('click', () => {
+      welcomeScreen.style.display = 'none';
+      gameStarted = true;
+      collectibles.forEach(collectible => collectible.visible = true);
+    });
+
+    const timerDiv = document.getElementById('timer');
+    function updateTimer(delta) {
+      if (!gameOver) {
+        gameTime -= delta;
+        timerDiv.textContent = Math.ceil(gameTime);
+        if (gameTime <= 0) {
+          showGameOver('Time Up!');
+        }
+      }
+    }
+
+    const lightingSlider = document.getElementById('lightingSlider');
+    lightingSlider.addEventListener('input', () => {
+      ambientLight.intensity = parseFloat(lightingSlider.value);
+    });
+
+    const cameraDistanceSlider = document.getElementById('cameraDistanceSlider');
+    let cameraDistance = 7;
+
+    cameraDistanceSlider.addEventListener('input', () => {
+      cameraDistance = parseFloat(cameraDistanceSlider.value);
+    });
+
+    function handleSingleInput(event, isTouch) {
+      if (!player || !isPlayerAlive || gameOver || gunsCollected === 0 || !gameStarted) return;
+      const clientX = isTouch ? event.changedTouches[0].clientX : event.clientX;
+      const clientY = isTouch ? event.changedTouches[0].clientY : event.clientY;
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
+      mouse.x = (clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, activeCamera);
+      const intersects = raycaster.intersectObject(floor);
+      if (intersects.length > 0) {
+        const targetPos = intersects[0].point;
+        const direction = targetPos.clone().sub(player.position).setY(0).normalize();
+        player.rotation.y = Math.atan2(-direction.x, -direction.z);
+        isFiring = true;
+        const projectile = new THREE.Mesh(
+          new THREE.SphereGeometry(0.1, 8, 8),
+          new THREE.MeshBasicMaterial({ color: 0x0000ff })
+        );
+        projectile.position.copy(player.position).addScaledVector(direction, 3.5).add(new THREE.Vector3(0, 3.5, 0));
+        projectile.userData = { velocity: direction.multiplyScalar(0.2), team: 'blue' };
+        scene.add(projectile);
+        projectiles.push(projectile);
+        setTimeout(() => { isFiring = false; }, 200);
+      }
+    }
+
+    document.addEventListener('touchstart', (event) => handleSingleInput(event, true));
+    document.addEventListener('click', (event) => handleSingleInput(event, false));
+
+    function resetGame() {
+      redTeam.forEach((npc) => {
+        scene.remove(npc.model);
+        if (npc.gun) scene.remove(npc.gun);
+        if (npc.energyBar) scene.remove(npc.energyBar.sprite);
+        if (npc.carriedFlag) {
+          npc.carriedFlag.userData.isCaptured = false;
+          npc.carriedFlag.userData.carrier = null;
+          npc.carriedFlag.position.copy(npc.carriedFlag.userData.team === 'red' ? new THREE.Vector3(-20, 1.5, 0) : new THREE.Vector3(20, 1.5, 0));
+          scene.add(npc.carriedFlag);
+        }
+      });
+      blueTeam.forEach((npc) => {
+        scene.remove(npc.model);
+        if (npc.gun) scene.remove(npc.gun);
+        if (npc.energyBar) scene.remove(npc.energyBar.sprite);
+        if (npc.carriedFlag) {
+          npc.carriedFlag.userData.isCaptured = false;
+          npc.carriedFlag.userData.carrier = null;
+          npc.carriedFlag.position.copy(npc.carriedFlag.userData.team === 'red' ? new THREE.Vector3(-20, 1.5, 0) : new THREE.Vector3(20, 1.5, 0));
+          scene.add(npc.carriedFlag);
+        }
+      });
+      collectibles.forEach((collectible) => scene.remove(collectible));
+      projectiles.forEach((projectile) => scene.remove(projectile));
+      particles.forEach((particle) => scene.remove(particle));
+
+      redTeam.length = 0;
+      blueTeam.length = 0;
+      collectibles.length = 0;
+      projectiles.length = 0;
+      particles.length = 0;
+      energyBars.length = 0;
+      gunsCollected = 0;
+      energyCollected = 0;
+      shieldsCollected = 0;
+      redTeamKills = 0;
+      blueTeamKills = 0;
+      redTeamCaptures = 0;
+      blueTeamCaptures = 0;
+      isPlayerAlive = true;
+      isAutoFire = false;
+      isFiring = false;
+      autoFireTimer = 0;
+      gameTime = 120;
+      gameOver = false;
+      gameStarted = false;
+      fireButton.style.display = 'none';
+      autoFireButton.style.display = 'none';
+      gameOverScreen.style.display = 'none';
+      restartButton.style.display = 'none';
+      welcomeScreen.style.display = 'flex';
+      timerDiv.textContent = '120';
+      lightingSlider.value = 0.5;
+      ambientLight.intensity = 0.5;
+      cameraDistanceSlider.value = 7;
+      cameraDistance = 7;
+
+      redFlag.userData.isCaptured = false;
+      redFlag.userData.carrier = null;
+      redFlag.position.set(-20, 1.5, 0);
+      blueFlag.userData.isCaptured = false;
+      blueFlag.userData.carrier = null;
+      blueFlag.position.set(20, 1.5, 0);
+      scene.add(redFlag, blueFlag);
+
+      loader.load(
+        modelUrl,
+        (gltf) => {
+          player = gltf.scene;
+          player.scale.set(3.5, 3.5, 3.5);
+          let validPosition = false;
+          let startPosition;
+          while (!validPosition) {
+            startPosition = new THREE.Vector3(20, 0, (Math.random() - 0.5) * 50);
+            validPosition = true;
+            for (let box of boxes) {
+              if (startPosition.distanceTo(box.position) < 3) {
+                validPosition = false;
+                break;
+              }
+            }
+          }
+          player.position.copy(startPosition);
+          player.traverse((child) => {
+            if (child.isMesh) {
+              child.material = child.material.clone();
+              child.material.transparent = true;
+              child.material.opacity = 0.5;
+              child.material.emissive.setHex(0x000000);
+              child.material.emissiveIntensity = 0;
+            }
+          });
+          scene.add(player);
+
+          mixer = new THREE.AnimationMixer(player);
+          const animations = gltf.animations;
+          walkAction = mixer.clipAction(animations.find(anim => anim.name === 'Walk') || animations[0]);
+          runAction = mixer.clipAction(animations.find(anim => anim.name === 'Run') || animations[0]);
+          walkAction.setLoop(THREE.LoopRepeat);
+          runAction.setLoop(THREE.LoopRepeat);
+          walkAction.play().paused = true;
+          runAction.play().paused = true;
+          currentAction = walkAction;
+          const playerData = {
+            model: player,
+            mixer,
+            velocity: new THREE.Vector3(0, 0, 0),
+            gun: null,
+            team: 'blue',
+            boundingBox: new THREE.Box3(),
+            energy: 100,
+            targetPosition: null,
+            hasShield: false,
+            originalMaterials: [],
+            shieldPulseTime: 0,
+            carriedFlag: null
+          };
+          player.traverse((child) => {
+            if (child.isMesh) playerData.originalMaterials.push(child.material.clone());
+          });
+          blueTeam.push(playerData);
+          createEnergyProgressBar(playerData);
+
+          for (let i = 0; i < 9; i++) {
+            loader.load(
+              modelUrl,
+              (gltf) => {
+                const npc = gltf.scene;
+                npc.scale.set(3.5, 3.5, 3.5);
+                const isRedTeam = i < 5;
+                let validNpcPosition = false;
+                let npcPosition;
+                while (!validNpcPosition) {
+                  npcPosition = new THREE.Vector3(isRedTeam ? -20 : 20, 0, (Math.random() - 0.5) * 50);
+                  validNpcPosition = true;
+                  for (let box of boxes) {
+                    if (npcPosition.distanceTo(box.position) < 3) {
+                      validNpcPosition = false;
+                      break;
+                    }
+                  }
+                }
+                npc.position.copy(npcPosition);
+                npc.traverse((child) => {
+                  if (child.isMesh) {
+                    child.material = child.material.clone();
+                    child.material.transparent = true;
+                    child.material.opacity = 0.5;
+                    child.material.emissive.setHex(0x000000);
+                    child.material.emissiveIntensity = 0;
+                  }
+                });
+                scene.add(npc);
+
+                const npcMixer = new THREE.AnimationMixer(npc);
+                const npcWalk = npcMixer.clipAction(animations.find(anim => anim.name === 'Walk') || animations[0]);
+                const npcRun = npcMixer.clipAction(animations.find(anim => anim.name === 'Run') || animations[0]);
+                npcWalk.setLoop(THREE.LoopRepeat);
+                npcRun.setLoop(THREE.LoopRepeat);
+                npcWalk.play();
+                npcRun.play().paused = true;
+
+                const npcData = {
+                  model: npc,
+                  mixer: npcMixer,
+                  velocity: new THREE.Vector3((Math.random() - 0.5) * 0.05, 0, (Math.random() - 0.5) * 0.05),
+                  changeDirectionTime: Math.random() * 5,
+                  gun: null,
+                  team: isRedTeam ? 'red' : 'blue',
+                  boundingBox: new THREE.Box3(),
+                  energy: 100,
+                  targetPosition: null,
+                  currentAction: npcWalk,
+                  runAction: npcRun,
+                  hasShield: false,
+                  originalMaterials: [],
+                  shieldPulseTime: Math.random() * Math.PI * 2,
+                  isFiring: false,
+                  carriedFlag: null
+                };
+                npc.traverse((child) => {
+                  if (child.isMesh) npcData.originalMaterials.push(child.material.clone());
+                });
+                if (isRedTeam) redTeam.push(npcData);
+                else blueTeam.push(npcData);
+                createEnergyProgressBar(npcData);
+              },
+              undefined,
+              (error) => {
+                console.error('Error loading NPC model:', error);
+                if (gameStarted) showFlashMessage('Failed to load NPC model.');
+              }
+            );
+          }
+          createCollectibles();
+        },
+        undefined,
+        (error) => {
+          console.error('Error loading player model:', error);
+          if (gameStarted) showFlashMessage('Failed to load player model.');
+        }
+      );
+
+      activeCamera = mainCamera;
+      mainCamera.position.set(20, 17.5, 35);
+      mainControls.target.set(20, 1, 0);
+      mainControls.update();
+    }
+
+    restartButton.addEventListener('click', resetGame);
+
+    const minimapCanvas = document.getElementById('minimap');
+    const minimapCtx = minimapCanvas.getContext('2d');
+    minimapCanvas.width = 250; // Increased from 150
+    minimapCanvas.height = 250; // Increased from 150
+
+    function drawMinimap() {
+      minimapCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+      minimapCtx.fillStyle = 'rgba(0, 100, 0, 0.5)';
+      minimapCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+
+      const scale = 5; // Adjusted scale for larger minimap
+      const offset = 125; // Adjusted offset for larger minimap
+
+      if (player && isPlayerAlive) {
+        minimapCtx.fillStyle = 'green';
+        minimapCtx.beginPath();
+        minimapCtx.arc(player.position.x * scale + offset, player.position.z * scale + offset, 8, 0, Math.PI * 2); // Increased size
+        minimapCtx.fill();
+      }
+
+      redTeam.forEach((npc) => {
+        minimapCtx.fillStyle = 'red';
+        minimapCtx.beginPath();
+        minimapCtx.arc(npc.model.position.x * scale + offset, npc.model.position.z * scale + offset, 5, 0, Math.PI * 2); // Increased size
+        minimapCtx.fill();
+      });
+
+      blueTeam.forEach((npc) => {
+        if (npc.model !== player) {
+          minimapCtx.fillStyle = 'blue';
+          minimapCtx.beginPath();
+          minimapCtx.arc(npc.model.position.x * scale + offset, npc.model.position.z * scale + offset, 5, 0, Math.PI * 2); // Increased size
+          minimapCtx.fill();
+        }
+      });
+
+      collectibles.forEach((collectible) => {
+        minimapCtx.fillStyle = collectible.userData.type === 'Gun' ? 'gray' : collectible.userData.type === 'Energy' ? 'red' : 'yellow';
+        minimapCtx.beginPath();
+        minimapCtx.arc(collectible.position.x * scale + offset, collectible.position.z * scale + offset, 3, 0, Math.PI * 2); // Increased size
+        minimapCtx.fill();
+      });
+
+      boxes.forEach((box) => {
+        const color = box.material.color.getHex();
+        minimapCtx.fillStyle = color === 0x00ff00 ? 'green' : color === 0xff0000 ? 'red' : 'blue';
+        minimapCtx.fillRect(
+          box.position.x * scale + offset - 3, // Adjusted size
+          box.position.z * scale + offset - 3, // Adjusted size
+          6, // Increased size
+          6 // Increased size
+        );
+      });
+
+      if (!redFlag.userData.isCaptured) {
+        minimapCtx.fillStyle = 'red';
+        minimapCtx.fillRect(-20 * scale + offset - 3, 0 * scale + offset - 3, 6, 6); // Increased size
+      }
+      if (!blueFlag.userData.isCaptured) {
+        minimapCtx.fillStyle = 'blue';
+        minimapCtx.fillRect(20 * scale + offset - 3, 0 * scale + offset - 3, 6, 6); // Increased size
+      }
+    }
+
+    const statsDiv = document.getElementById('stats');
+    function updateStats() {
+      statsDiv.innerHTML = `
+        Guns Collected: ${gunsCollected}<br>
+        Energy Collected: ${energyCollected}<br>
+        Shields Collected: ${shieldsCollected}<br>
+        Red Team Kills: ${redTeamKills}<br>
+        Blue Team Kills: ${blueTeamKills}<br>
+        Red Team Captures: ${redTeamCaptures}<br>
+        Blue Team Captures: ${blueTeamCaptures}<br>
+        Player Pos: (${player && isPlayerAlive ? player.position.x.toFixed(1) : 0}, ${player && isPlayerAlive ? player.position.z.toFixed(1) : 0})<br>
+        Player Energy: ${blueTeam[0] ? blueTeam[0].energy : 0}
+      `;
+    }
+
+    let cameraMode = 'main';
+    mainCamera.position.set(20, 17.5, 35);
+    const mainControls = new THREE.OrbitControls(mainCamera, renderer.domElement);
+    mainControls.target.set(20, 1, 0);
+    mainControls.enablePan = true;
+    mainControls.minDistance = 5;
+    mainControls.maxDistance = 100;
+    mainControls.update();
+
+    const playerControls = new THREE.OrbitControls(playerCamera, renderer.domElement);
+    playerControls.enablePan = false;
+    playerControls.minDistance = 2;
+    playerControls.maxDistance = 10;
+    playerControls.enableZoom = false;
+    playerControls.enabled = false;
+
+    const toggleCameraButton = document.getElementById('toggleCameraButton');
+    toggleCameraButton.addEventListener('click', () => {
+      if (!isPlayerAlive || gameOver || !gameStarted) return;
+      if (cameraMode === 'main') {
+        cameraMode = 'player';
+        toggleCameraButton.textContent = 'Switch to Main View';
+        activeCamera = playerCamera;
+        mainControls.enabled = false;
+        playerControls.enabled = true;
+        if (player) {
+          playerControls.target.copy(player.position);
+          playerControls.target.y = 3.5;
+          playerControls.update();
+        }
+      } else {
+        cameraMode = 'main';
+        toggleCameraButton.textContent = 'Switch to Player View';
+        activeCamera = mainCamera;
+        mainControls.enabled = true;
+        playerControls.enabled = false;
+        if (player) {
+          mainCamera.position.set(player.position.x, 17.5, player.position.z + 35);
+          mainControls.target.copy(player.position);
+          mainControls.target.y = 3.5;
+          mainControls.update();
+        }
+      }
+    });
+
+    const fireButton = document.getElementById('fireButton');
+    fireButton.addEventListener('click', () => {
+      if (gunsCollected > 0 && player && isPlayerAlive && !gameOver && gameStarted) {
+        isFiring = true;
+        const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion);
+        const projectile = new THREE.Mesh(
+          new THREE.SphereGeometry(0.1, 8, 8),
+          new THREE.MeshBasicMaterial({ color: 0x0000ff })
+        );
+        projectile.position.copy(player.position).addScaledVector(direction, 3.5).add(new THREE.Vector3(0, 3.5, 0));
+        projectile.userData = { velocity: direction.multiplyScalar(0.2), team: 'blue' };
+        scene.add(projectile);
+        projectiles.push(projectile);
+        setTimeout(() => { isFiring = false; }, 200);
+      }
+    });
+
+    const autoFireButton = document.getElementById('autoFireButton');
+    autoFireButton.addEventListener('click', () => {
+      if (isPlayerAlive && gunsCollected > 0 && !gameOver && gameStarted) {
+        isAutoFire = !isAutoFire;
+        autoFireButton.textContent = isAutoFire ? 'Disable Auto-Fire' : 'Enable Auto-Fire';
+      }
+    });
+
+    const joystickContainer = document.getElementById('joystickContainer');
+    const joystick = nipplejs.create({
+      zone: joystickContainer,
+      mode: 'static',
+      position: { left: '50%', top: '50%' },
+      color: 'blue'
+    });
+    let joystickVector = new THREE.Vector2(0, 0);
+
+    joystick.on('move', (evt, data) => {
+      if (isPlayerAlive && !gameOver && gameStarted) {
+        joystickVector.set(data.vector.x, -data.vector.y);
+      }
+    });
+    joystick.on('end', () => {
+      joystickVector.set(0, 0);
+    });
+
+    const moveSpeed = 0.1;
+    const runSpeed = 0.15;
+    const jumpForce = 5;
+    let velocity = new THREE.Vector3(0, 0, 0);
+    let isJumping = false;
+    const collisionRadius = 2.0;
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === ' ' && !isJumping && isPlayerAlive && !gameOver && gameStarted) {
+        velocity.y = jumpForce;
+        isJumping = true;
+      }
+    });
+
+    function createExplosion(position, team) {
+      const particleCount = 20;
+      const particleGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+      const particleMaterial = new THREE.MeshBasicMaterial({ color: team === 'blue' ? 0x0000ff : 0xff0000 });
+
+      for (let i = 0; i < particleCount; i++) {
+        const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+        particle.position.copy(position);
+        particle.userData = {
+          velocity: new THREE.Vector3((Math.random() - 0.5) * 0.5, Math.random() * 0.5, (Math.random() - 0.5) * 0.5),
+          lifetime: 1.0
+        };
+        scene.add(particle);
+        particles.push(particle);
+      }
+    }
+
+    function avoidCollisions(npc, velocity, allPlayers) {
+      let avoidanceVector = new THREE.Vector3(0, 0, 0);
+      allPlayers.forEach((other) => {
+        if (other !== npc && other.model.position) {
+          const distance = npc.model.position.distanceTo(other.model.position);
+          if (distance < collisionRadius && distance > 0) {
+            const awayVector = npc.model.position.clone().sub(other.model.position).normalize();
+            const weight = (collisionRadius - distance) / collisionRadius;
+            avoidanceVector.add(awayVector.multiplyScalar(weight * 0.1));
+          }
+        }
+      });
+
+      const newPosition = npc.model.position.clone().add(velocity);
+      boxes.forEach((box) => {
+        const boxBox = box.userData.boundingBox;
+        const npcBox = npc.boundingBox.clone().translate(velocity);
+        if (npcBox.intersectsBox(boxBox)) {
+          const directionToBox = box.position.clone().sub(npc.model.position).normalize();
+          avoidanceVector.add(directionToBox.multiplyScalar(-0.1));
+        }
+      });
+
+      return velocity.clone().add(avoidanceVector);
+    }
+
+    const clock = new THREE.Clock();
+    let globalTime = 0;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      globalTime += delta;
+
+      if (!gameStarted) {
+        startButtonThrobTime += delta;
+        const scale = 1 + 0.1 * Math.sin(startButtonThrobTime * 3);
+        startButton.style.transform = `scale(${scale})`;
+        renderer.render(scene, activeCamera);
+        return;
+      }
+
+      updateTimer(delta);
+
+      if (gameOver) {
+        renderer.render(scene, activeCamera);
+        return;
+      }
+
+      const allPlayers = [...redTeam, ...blueTeam];
+
+      if (player && mixer && isPlayerAlive) {
+        const joystickMagnitude = joystickVector.length();
+        if (joystickMagnitude > 0.1) {
+          const speed = joystickMagnitude > 0.7 ? runSpeed : moveSpeed;
+          velocity.x = joystickVector.x * speed;
+          velocity.z = joystickVector.y * speed;
+          if (!isFiring) {
+            const nextAction = joystickMagnitude > 0.7 ? runAction : walkAction;
+            if (currentAction !== nextAction) {
+              currentAction.fadeOut(0.2);
+              nextAction.reset().fadeIn(0.2).play();
+              currentAction = nextAction;
+            }
+            currentAction.paused = false;
+            currentAction.timeScale = joystickMagnitude > 0.7 ? 2.0 : 1.5;
+          }
+        } else {
+          velocity.x = 0;
+          velocity.z = 0;
+          if (!isFiring) {
+            currentAction.paused = true;
+          }
+        }
+
+        if (velocity.x !== 0 || velocity.z !== 0) {
+          const angle = Math.atan2(-velocity.x, -velocity.z);
+          player.rotation.y = angle;
+          if (!isFiring) {
+            const nextAction = velocity.length() > moveSpeed ? runAction : walkAction;
+            if (currentAction !== nextAction) {
+              currentAction.fadeOut(0.2);
+              nextAction.reset().fadeIn(0.2).play();
+              currentAction = nextAction;
+            }
+            currentAction.paused = false;
+          }
+        } else if (!isFiring) {
+          currentAction.paused = true;
+        }
+
+        velocity = avoidCollisions(blueTeam[0], velocity, allPlayers);
+        velocity.y -= 0.01;
+        player.position.add(velocity);
+
+        if (player.position.y <= 0) {
+          player.position.y = 0;
+          velocity.y = 0;
+          isJumping = false;
+        }
+
+        blueTeam[0].boundingBox.setFromObject(player);
+
+        if (!redFlag.userData.isCaptured) {
+          const distanceToRedFlag = player.position.distanceTo(redFlag.position);
+          if (distanceToRedFlag < 3.5 && !blueTeam[0].carriedFlag) {
+            redFlag.userData.isCaptured = true;
+            redFlag.userData.carrier = blueTeam[0];
+            blueTeam[0].carriedFlag = redFlag;
+            scene.remove(redFlag);
+            player.add(redFlag);
+            redFlag.position.set(0, 1.5, 0.5);
+            redFlag.scale.set(0.5, 0.5, 0.5);
+            showFlashMessage('Red Flag Captured!');
+            blueTeam[0].targetPosition = new THREE.Vector3(20, 0, 0);
+          }
+        }
+
+        if (blueTeam[0].carriedFlag && blueTeam[0].carriedFlag.userData.team === 'red') {
+          const distanceToBlueBase = player.position.distanceTo(new THREE.Vector3(20, 0, 0));
+          if (distanceToBlueBase < 3.5) {
+            blueTeamCaptures++;
+            blueTeam[0].carriedFlag.userData.isCaptured = false;
+            blueTeam[0].carriedFlag.userData.carrier = null;
+            blueTeam[0].carriedFlag.position.set(-20, 1.5, 0);
+            blueTeam[0].carriedFlag.scale.set(1, 1, 1);
+            scene.add(blueTeam[0].carriedFlag);
+            player.remove(blueTeam[0].carriedFlag);
+            blueTeam[0].carriedFlag = null;
+            showFlashMessage('Blue Team Scored!');
+          }
+        }
+
+        collectibles.forEach((collectible, index) => {
+          if (!collectible.position) return;
+          const distance = player.position.distanceTo(collectible.position);
+          if (distance < 3.5) {
+            scene.remove(collectible);
+            collectibles.splice(index, 1);
+            if (collectible.userData.type === 'Gun') {
+              gunsCollected++;
+              showFlashMessage('Collected Gun!');
+              if (!gun) {
+                gun = createGun();
+                gun.position.set(0.4, 0.8, 0.02);
+                gun.scale.set(0.75, 0.75, 0.75);
+                player.add(gun);
+                fireButton.style.display = 'block';
+                autoFireButton.style.display = 'block';
+                blueTeam[0].gun = gun;
+              }
+            } else if (collectible.userData.type === 'Energy') {
+              energyCollected++;
+              blueTeam[0].energy = Math.min(blueTeam[0].energy + 10, 100);
+              updateEnergyProgressBar(blueTeam[0]);
+              showFlashMessage('Collected Energy!');
+            } else if (collectible.userData.type === 'Shield') {
+              shieldsCollected++;
+              blueTeam[0].hasShield = true;
+              player.traverse((child) => {
+                if (child.isMesh) {
+                  child.material.emissive.setHex(0xffff00);
+                  child.material.emissiveIntensity = 0.3;
+                }
+              });
+              showFlashMessage('Collected Shield!');
+            }
+          }
+        });
+
+        if (isAutoFire && gunsCollected > 0) {
+          autoFireTimer += delta;
+          if (autoFireTimer >= 0.5) {
+            isFiring = true;
+            const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion);
+            const projectile = new THREE.Mesh(
+              new THREE.SphereGeometry(0.1, 8, 8),
+              new THREE.MeshBasicMaterial({ color: 0x0000ff })
+            );
+            projectile.position.copy(player.position).addScaledVector(direction, 3.5).add(new THREE.Vector3(0, 3.5, 0));
+            projectile.userData = { velocity: direction.multiplyScalar(0.2), team: 'blue' };
+            scene.add(projectile);
+            projectiles.push(projectile);
+            autoFireTimer = 0;
+            setTimeout(() => { isFiring = false; }, 200);
+          }
+        }
+
+        if (blueTeam[0].hasShield) {
+          blueTeam[0].shieldPulseTime += delta;
+          const intensity = 0.2 + 0.1 * Math.sin(blueTeam[0].shieldPulseTime);
+          player.traverse((child) => {
+            if (child.isMesh) {
+              child.material.emissiveIntensity = intensity;
+            }
+          });
+        }
+
+        if (cameraMode === 'main') {
+          if (player) {
+            mainCamera.position.set(player.position.x, 17.5, player.position.z + 35);
+            mainControls.target.set(player.position.x, player.position.y + 3.5, player.position.z);
+            mainControls.update();
+          }
+        } else if (cameraMode === 'player') {
+          const offset = new THREE.Vector3(0, 7, cameraDistance).applyQuaternion(player.quaternion);
+          playerCamera.position.copy(player.position).add(offset);
+          playerControls.target.set(player.position.x, player.position.y + 3.5, player.position.z);
+          playerControls.update();
+        }
+
+        mixer.update(delta);
+      }
+
+      [redTeam, blueTeam].forEach((team) => {
+        team.forEach((npc, index) => {
+          if (npc.model !== player) {
+            const { velocity, changeDirectionTime } = npc;
+            let evasionVector = new THREE.Vector3(0, 0, 0);
+            const enemyTeam = npc.team === 'red' ? 'blue' : 'red';
+            projectiles.forEach((projectile) => {
+              if (projectile.userData.team === enemyTeam) {
+                const distance = npc.model.position.distanceTo(projectile.position);
+                if (distance < 5) {
+                  const awayVector = npc.model.position.clone().sub(projectile.position).normalize();
+                  evasionVector.add(awayVector.multiplyScalar(0.1));
+                }
+              }
+            });
+            let totalVelocity = velocity.clone().add(evasionVector);
+            npc.changeDirectionTime -= delta;
+            if (npc.changeDirectionTime <= 0) {
+              velocity.set((Math.random() - 0.5) * 0.05, 0, (Math.random() - 0.5) * 0.05);
+              npc.changeDirectionTime = Math.random() * 5;
+            }
+            if (totalVelocity.length() > 0 && !npc.isFiring) {
+              npc.currentAction.paused = false;
+              npc.currentAction.timeScale = 1.5;
+            } else if (!npc.isFiring) {
+              npc.currentAction.paused = true;
+            }
+
+            const targetFlag = npc.team === 'red' ? blueFlag : redFlag;
+            const targetBase = npc.team === 'red' ? new THREE.Vector3(-20, 0, 0) : new THREE.Vector3(20, 0, 0);
+
+            if (!targetFlag.userData.isCaptured) {
+              const distanceToFlag = npc.model.position.distanceTo(targetFlag.position);
+              if (distanceToFlag < 3.5 && !npc.carriedFlag) {
+                targetFlag.userData.isCaptured = true;
+                targetFlag.userData.carrier = npc;
+                npc.carriedFlag = targetFlag;
+                scene.remove(targetFlag);
+                npc.model.add(targetFlag);
+                targetFlag.position.set(0, 1.5, 0.5);
+                targetFlag.scale.set(0.5, 0.5, 0.5);
+                showFlashMessage(`${npc.team === 'red' ? 'Red' : 'Blue'} Team Captured ${targetFlag.userData.team === 'red' ? 'Red' : 'Blue'} Flag!`);
+                npc.targetPosition = targetBase.clone();
+              }
+            }
+
+            if (npc.carriedFlag) {
+              const distanceToBase = npc.model.position.distanceTo(targetBase);
+              if (distanceToBase < 3.5) {
+                if (npc.team === 'red') redTeamCaptures++;
+                else blueTeamCaptures++;
+                npc.carriedFlag.userData.isCaptured = false;
+                npc.carriedFlag.userData.carrier = null;
+                npc.carriedFlag.position.copy(npc.carriedFlag.userData.team === 'red' ? new THREE.Vector3(-20, 1.5, 0) : new THREE.Vector3(20, 1.5, 0));
+                npc.carriedFlag.scale.set(1, 1, 1);
+                scene.add(npc.carriedFlag);
+                npc.model.remove(npc.carriedFlag);
+                npc.carriedFlag = null;
+                showFlashMessage(`${npc.team === 'red' ? 'Red' : 'Blue'} Team Scored!`);
+                npc.targetPosition = null;
+              }
+            }
+
+            totalVelocity = avoidCollisions(npc, totalVelocity, allPlayers);
+            npc.model.position.add(totalVelocity);
+            const angle = Math.atan2(-totalVelocity.x, -totalVelocity.z);
+            if (totalVelocity.length() > 0) {
+              npc.model.rotation.y = angle;
+              if (!npc.isFiring) {
+                npc.currentAction.paused = false;
+                npc.currentAction.timeScale = 1.5;
+              }
+            } else if (!npc.isFiring) {
+              npc.currentAction.paused = true;
+            }
+
+            if (npc.model.position.y <= 0) npc.model.position.y = 0;
+            npc.model.position.clamp(new THREE.Vector3(-50, 0, -50), new THREE.Vector3(50, 0, 50));
+            npc.boundingBox.setFromObject(npc.model);
+
+            collectibles.forEach((collectible, cIndex) => {
+              if (!collectible.position) return;
+              const distance = npc.model.position.distanceTo(collectible.position);
+              if (distance < 3.5) {
+                scene.remove(collectible);
+                collectibles.splice(cIndex, 1);
+                if (collectible.userData.type === 'Gun' && !npc.gun) {
+                  npc.gun = createGun();
+                  npc.gun.position.set(0.4, 0.8, 0.02);
+                  npc.gun.scale.set(0.75, 0.75, 0.75);
+                  npc.model.add(npc.gun);
+                } else if (collectible.userData.type === 'Shield') {
+                  npc.hasShield = true;
+                  npc.model.traverse((child) => {
+                    if (child.isMesh) {
+                      child.material.emissive.setHex(0xffff00);
+                      child.material.emissiveIntensity = 0.3;
+                    }
+                  });
+                }
+              }
+            });
+
+            if (npc.gun && Math.random() < 0.01) {
+              npc.isFiring = true;
+              const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(npc.model.quaternion);
+              const projectile = new THREE.Mesh(
+                new THREE.SphereGeometry(0.1, 8, 8),
+                new THREE.MeshBasicMaterial({ color: npc.team === 'red' ? 0xff0000 : 0x0000ff })
+              );
+              projectile.position.copy(npc.model.position).addScaledVector(direction, 3.5).add(new THREE.Vector3(0, 3.5, 0));
+              projectile.userData = { velocity: direction.multiplyScalar(0.2), team: npc.team };
+              scene.add(projectile);
+              projectiles.push(projectile);
+              setTimeout(() => { npc.isFiring = false; }, 200);
+            }
+
+            if (npc.hasShield) {
+              npc.shieldPulseTime += delta;
+              const intensity = 0.2 + 0.1 * Math.sin(npc.shieldPulseTime);
+              npc.model.traverse((child) => {
+                if (child.isMesh) {
+                  child.material.emissiveIntensity = intensity;
+                }
+              });
+            }
+
+            npc.mixer.update(delta);
+          }
+        });
+      });
+
+      collectibles.forEach((collectible) => {
+        if (collectible.userData.type === 'Energy' || collectible.userData.type === 'Shield') {
+          collectible.userData.throbTime += delta;
+          const scale = (collectible.userData.type === 'Energy' ? 4 : 2) + 0.2 * Math.sin(collectible.userData.throbTime * 3);
+          collectible.scale.set(scale, scale, scale);
+          collectible.rotation.y += delta;
+        }
+      });
+
+      const projectilesToRemove = [];
+      const playersToRemove = [];
+
+      projectiles.forEach((projectile, pIndex) => {
+        if (!projectile.position) return;
+        projectile.position.add(projectile.userData.velocity);
+        if (projectile.position.length() > 50) {
+          projectilesToRemove.push(pIndex);
+          return;
+        }
+
+        const projectileBox = new THREE.Box3().setFromObject(projectile);
+        const targetTeam = projectile.userData.team === 'red' ? blueTeam : redTeam;
+
+        targetTeam.forEach((npc, nIndex) => {
+          if (!npc.model.position) return;
+          const distance = projectile.position.distanceTo(npc.model.position);
+          const boxIntersect = projectileBox.intersectsBox(npc.boundingBox);
+          if (distance < 5.25 || boxIntersect) {
+            if (npc.hasShield) {
+              npc.hasShield = false;
+              npc.model.traverse((child) => {
+                if (child.isMesh && npc.originalMaterials.length > 0) {
+                  const index = npc.model.children.indexOf(child);
+                  child.material.emissive.setHex(0x000000);
+                  child.material.emissiveIntensity = 0;
+                }
+              });
+              showFlashMessage(`${npc.team === 'blue' ? 'Blue' : 'Red'} Shield Broken!`);
+            } else {
+              createBloodEffect(npc.model.position);
+              npc.energy -= 25;
+              updateEnergyProgressBar(npc);
+              if (npc.energy <= 0) {
+                createExplosion(npc.model.position, npc.team);
+                if (npc.carriedFlag) {
+                  npc.carriedFlag.userData.isCaptured = false;
+                  npc.carriedFlag.userData.carrier = null;
+                  npc.carriedFlag.position.copy(npc.carriedFlag.userData.team === 'red' ? new THREE.Vector3(-20, 1.5, 0) : new THREE.Vector3(20, 1.5, 0));
+                  npc.carriedFlag.scale.set(1, 1, 1);
+                  scene.add(npc.carriedFlag);
+                  npc.model.remove(npc.carriedFlag);
+                  npc.carriedFlag = null;
+                  showFlashMessage(`${npc.team === 'blue' ? 'Blue' : 'Red'} Team Dropped Flag!`);
+                }
+                if (npc.model === player) {
+                  showFlashMessage('Blue Player Killed!', 5000);
+                  isPlayerAlive = false;
+                  fireButton.style.display = 'none';
+                  autoFireButton.style.display = 'none';
+                  isAutoFire = false;
+                  showGameOver();
+                } else {
+                  showFlashMessage(`${npc.team === 'blue' ? 'Blue' : 'Red'} Player Killed!`);
+                }
+                playersToRemove.push({ team: targetTeam, index: nIndex });
+              }
+            }
+            projectilesToRemove.push(pIndex);
+            if (npc.energy <= 0) {
+              if (projectile.userData.team === 'blue') blueTeamKills++;
+              else redTeamKills++;
+            }
+          }
+        });
+      });
+
+      projectilesToRemove.sort((a, b) => b - a).forEach((pIndex) => {
+        scene.remove(projectiles[pIndex]);
+        projectiles.splice(pIndex, 1);
+      });
+
+      playersToRemove.forEach(({ team, index }) => {
+        const npc = team[index];
+        scene.remove(npc.model);
+        if (npc.gun) scene.remove(npc.gun);
+        if (npc.energyBar) scene.remove(npc.energyBar.sprite);
+        team.splice(index, 1);
+      });
+
+      particles.forEach((particle, index) => {
+        if (!particle.position) return;
+        particle.position.add(particle.userData.velocity);
+        particle.userData.lifetime -= delta;
+        if (particle.userData.lifetime <= 0) {
+          scene.remove(particle);
+          particles.splice(index, 1);
+        }
+      });
+
+      energyBars.forEach((playerData) => {
+        if (playerData.model && playerData.energy > 0) updateEnergyProgressBar(playerData);
+      });
+
+      drawMinimap();
+      updateStats();
+
+      renderer.render(scene, activeCamera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      mainCamera.aspect = window.innerWidth / window.innerHeight;
+      playerCamera.aspect = window.innerWidth / window.innerHeight;
+      mainCamera.updateProjectionMatrix();
+      playerCamera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
