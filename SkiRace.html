@@ -1,1567 +1,1527 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>3D Battle Arena</title>
-  <style>
-    body { margin: 0; }
-    canvas { display: block; }
-    #toggleCameraButton, #fireButton, #autoFireButton, #restartButton {
-      position: absolute;
-      padding: 10px;
-      font-size: 16px;
-      cursor: pointer;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-    }
-    #toggleCameraButton { bottom: 20px; left: 20px; }
-    #fireButton { bottom: 20px; right: 300px; display: none; }
-    #autoFireButton { bottom: 20px; right: 160px; display: none; }
-    #restartButton { top: 50%; left: 50%; transform: translate(-50%, 50%); display: none; }
-    #toggleCameraButton:hover, #fireButton:hover, #autoFireButton:hover, #restartButton:hover { background-color: #45a049; }
-    #joystickContainer {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100px;
-      height: 100px;
-    }
-    #minimap {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      width: 250px; /* Increased from 150px */
-      height: 250px; /* Increased from 150px */
-      opacity: 0.7;
-      background-color: rgba(0, 0, 0, 0.5);
-      border: 1px solid white;
-    }
-    #stats {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      color: white;
-      font-family: Arial, sans-serif;
-      font-size: 14px;
-      background-color: rgba(0, 0, 0, 0.5);
-      padding: 5px;
-      border-radius: 5px;
-    }
-    #timer {
-      position: absolute;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      color: white;
-      font-family: Arial, sans-serif;
-      font-size: 20px;
-      background-color: rgba(0, 0, 0, 0.5);
-      padding: 5px 10px;
-      border-radius: 5px;
-    }
-    #flashMessage {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: yellow;
-      font-family: Arial, sans-serif;
-      font-size: 24px;
-      background-color: rgba(0, 0, 0, 0.7);
-      padding: 10px 20px;
-      border-radius: 5px;
-      display: none;
-    }
-    #gameOverScreen {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.8);
-      color: red;
-      font-family: Arial, sans-serif;
-      font-size: 48px;
-      display: none;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-    }
-    #welcomeScreen {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.8);
-      color: white;
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-    }
-    #welcomeScreen h1 {
-      font-size: 48px;
-      margin-bottom: 20px;
-    }
-    #startButton {
-      padding: 15px 30px;
-      font-size: 24px;
-      cursor: pointer;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-    }
-    #startButton:hover {
-      background-color: #45a049;
-    }
-    #lightingSliderContainer, #cameraDistanceSliderContainer {
-      position: absolute;
-      left: 10px;
-      background-color: rgba(0, 0, 0, 0.5);
-      padding: 10px;
-      border-radius: 5px;
-    }
-    #lightingSliderContainer { top: 170px; }
-    #cameraDistanceSliderContainer { top: 230px; }
-    #lightingSlider, #cameraDistanceSlider {
-      width: 100px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ski Race - V0.9.1</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+        #joystick {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 100px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            touch-action: none;
+            display: none;
+        }
+        #knob {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 25px;
+            left: 25px;
+        }
+        #stats {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            text-shadow: 1px 1px 2px black;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px;
+            border-radius: 4px;
+            display: none;
+        }
+        #bonus, #flagHit, #penalty, #correct, #finishMessage, #npcHit {
+            position: absolute;
+            color: yellow;
+            font-size: 30px;
+            font-family: Arial, sans-serif;
+            text-shadow: 1px 1px 2px black;
+            display: none;
+        }
+        #bonus, #flagHit, #penalty, #npcHit {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        #correct {
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        #correct.left {
+            left: 20px;
+        }
+        #correct.right {
+            right: 20px;
+        }
+        #finishMessage {
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+        }
+        #flagHit {
+            color: red;
+        }
+        #penalty {
+            color: orange;
+        }
+        #correct {
+            color: green;
+        }
+        .mini-score {
+            position: absolute;
+            color: yellow;
+            font-size: 20px;
+            font-family: Arial, sans-serif;
+            text-shadow: 1px 1px 2px black;
+            pointer-events: none;
+            transition: opacity 1s, transform 1s;
+        }
+        .mini-score.penalty {
+            color: orange;
+        }
+        .mini-score.fade {
+            opacity: 0;
+            transform: translateY(-50px);
+        }
+        #gameOver, #levelComplete {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            display: none;
+        }
+        #welcome {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+        }
+        #toggleCamera {
+            position: absolute;
+            bottom: 20px;
+            left: 10px;
+            padding: 10px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+            display: none;
+        }
+        #miniMap {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 5px;
+            display: none;
+            rotate: 90deg;
+        }
+        #sideView {
+            position: absolute;
+            top: 170px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 5px;
+            display: none;
+        }
+        #progressBar {
+            position: absolute;
+            bottom: 100px;
+            left: 10px;
+            width: 20px;
+            height: 60%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid white;
+            border-radius: 5px;
+            display: none;
+        }
+        #progressFill {
+            width: 100%;
+            background: white;
+            border-radius: 3px;
+            transition: height 0.2s;
+            position: absolute;
+            bottom: 0;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+    </style>
 </head>
 <body>
-  <div id="welcomeScreen">
-    <h1>3D Battle Arena</h1>
-    <button id="startButton">Start Game</button>
-  </div>
-  <button id="toggleCameraButton">Toggle Camera</button>
-  <button id="fireButton">Fire Gun</button>
-  <button id="autoFireButton">Toggle Auto-Fire</button>
-  <button id="restartButton">Restart Game</button>
-  <div id="joystickContainer"></div>
-  <canvas id="minimap"></canvas>
-  <div id="stats"></div>
-  <div id="timer">120</div>
-  <div id="flashMessage"></div>
-  <div id="gameOverScreen">Game Over</div>
-  <div id="lightingSliderContainer">
-    <label for="lightingSlider" style="color: white;">Ambient Light</label>
-    <input type="range" id="lightingSlider" min="0" max="5" step="0.1" value="0.5">
-  </div>
-  <div id="cameraDistanceSliderContainer">
-    <label for="cameraDistanceSlider" style="color: white;">Camera Distance</label>
-    <input type="range" id="cameraDistanceSlider" min="2" max="10" step="0.1" value="7">
-  </div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/nipplejs@0.9.0/dist/nipplejs.min.js"></script>
-  <script>
-    const scene = new THREE.Scene();
-    const mainCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const playerCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    let activeCamera = mainCamera;
-    const renderer = new THREE.WebGLRenderer();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+    <div id="joystick"><div id="knob"></div></div>
+    <div id="stats"></div>
+    <div id="bonus"></div>
+    <div id="flagHit"></div>
+    <div id="penalty"></div>
+    <div id="correct"></div>
+    <div id="npcHit"></div>
+    <div id="finishMessage"></div>
+    <div id="gameOver">
+        <h1>Game Over</h1>
+        <p id="finalStats"></p>
+        <button onclick="restartGame()">Play Again</button>
+    </div>
+    <div id="levelComplete">
+        <h1>Level Complete!</h1>
+        <p id="levelStats"></p>
+        <button onclick="nextLevel()">Next Level</button>
+    </div>
+    <div id="welcome">
+        <h1>Downhill Ski Challenge</h1>
+        <p>Ski down steep slopes, weaving through flags, avoiding skiers, and collecting items to score points. Avoid hitting flags to keep your lives!</p>
+        <button onclick="startGame()">Start Game</button>
+    </div>
+    <button id="toggleCamera" onclick="toggleCamera()">Camera: Default</button>
+    <canvas id="miniMap"></canvas>
+    <canvas id="sideView"></canvas>
+    <div id="progressBar"><div id="progressFill"></div></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script>        
+        let scene, camera, renderer, skier, flags = [], finishLine, terrain, trees = [], npcs = [], collectables = [], snowballs = [], flagpoles = [];
+        let lives = 3, score = 0, time = 0, level = 1, gameOver = false, autoPlay = false, autoThrow = true, snowballAmmo = 0, snowballsUsed = 0, npcsHit = 0;
+        let clock = new THREE.Clock();
+        let joystick = { x: 0, y: 0, active: false };
+        let currentSpeed = 0, speedBoostTimer = 0, skidTimer = 0, throwTimer = 0;
+        let skierParts = {};
+        let stumbleTimer = 0;
+        let miniMap, miniMapCtx, sideView, sideViewCtx;
+        let skiTrails = { left: [], right: [] };
+        let mainTrails = { left: [], right: [] };
+        let npcTrails = [];
+        let screenShake = { active: false, timer: 0, intensity: 0.5 };
+        let cameraMode = 'default';
+        let flyAroundAngle = 0;
+        let snowballCooldown = 0;
+        let miniMapZoom = 2.0;
 
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
-    scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-    directionalLight.position.set(0, 10, 10);
-    scene.add(directionalLight);
-
-    const floorGeometry = new THREE.PlaneGeometry(100, 100);
-    const floorMaterial = new THREE.MeshStandardMaterial({
-      color: 0x1a1a1a,
-      metalness: 0.8,
-      roughness: 0.2,
-      envMapIntensity: 1.0
-    });
-    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-    floor.rotation.x = -Math.PI / 2;
-    scene.add(floor);
-
-    const gridGeometry = new THREE.BufferGeometry();
-    const gridVertices = [];
-    const gridSize = 100;
-    const cellSize = 5;
-    for (let i = -gridSize / 2; i <= gridSize / 2; i += cellSize) {
-      gridVertices.push(i, 0.01, -gridSize / 2, i, 0.01, gridSize / 2);
-      gridVertices.push(-gridSize / 2, 0.01, i, gridSize / 2, 0.01, i);
-    }
-    gridGeometry.setAttribute('position', new THREE.Float32BufferAttribute(gridVertices, 3));
-    const gridMaterial = new THREE.LineBasicMaterial({ color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 0.5 });
-    const grid = new THREE.LineSegments(gridGeometry, gridMaterial);
-    scene.add(grid);
-
-    const borderGeometry = new THREE.BufferGeometry();
-    const borderVertices = new Float32Array([
-      -50, 0.1, -50,  50, 0.1, -50,
-       50, 0.1, -50,  50, 0.1,  50,
-       50, 0.1,  50, -50, 0.1,  50,
-      -50, 0.1,  50, -50, 0.1, -50
-    ]);
-    borderGeometry.setAttribute('position', new THREE.BufferAttribute(borderVertices, 3));
-    const borderMaterial = new THREE.LineBasicMaterial({ color: 0x00ffff, linewidth: 3 });
-    const border = new THREE.Line(borderGeometry, borderMaterial);
-    scene.add(border);
-
-    const starGeometry = new THREE.BufferGeometry();
-    const starCount = 10000;
-    const starPositions = new Float32Array(starCount * 3);
-    for (let i = 0; i < starCount; i++) {
-      starPositions[i * 3] = (Math.random() - 0.5) * 2000;
-      starPositions[i * 3 + 1] = (Math.random() - 0.5) * 2000;
-      starPositions[i * 3 + 2] = (Math.random() - 0.5) * 2000;
-    }
-    starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-    const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 2, sizeAttenuation: true });
-    const starField = new THREE.Points(starGeometry, starMaterial);
-    scene.add(starField);
-
-    const boxes = [];
-    for (let i = 0; i < 10; i++) {
-      const boxGeometry = new THREE.BoxGeometry(2, 2, 2);
-      const boxMaterial = new THREE.MeshStandardMaterial({
-        color: 0x00ff00,
-        emissive: 0x00ff00,
-        emissiveIntensity: 0.2,
-        transparent: true,
-        opacity: 0.5,
-        metalness: 0.2,
-        roughness: 0.8
-      });
-      const box = new THREE.Mesh(boxGeometry, boxMaterial);
-      box.position.set((Math.random() - 0.5) * 80, 1, (Math.random() - 0.5) * 80);
-      const edges = new THREE.EdgesGeometry(boxGeometry);
-      const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
-      const outline = new THREE.LineSegments(edges, lineMaterial);
-      box.add(outline);
-      box.userData.boundingBox = new THREE.Box3().setFromObject(box);
-      scene.add(box);
-      boxes.push(box);
-    }
-    for (let i = 0; i < 10; i++) {
-      const boxGeometry = new THREE.BoxGeometry(2, 2, 2);
-      const boxMaterial = new THREE.MeshStandardMaterial({
-        color: 0xff0000,
-        emissive: 0xff0000,
-        emissiveIntensity: 0.2,
-        transparent: true,
-        opacity: 0.5,
-        metalness: 0.2,
-        roughness: 0.8
-      });
-      const box = new THREE.Mesh(boxGeometry, boxMaterial);
-      box.position.set((Math.random() - 0.5) * 80, 1, (Math.random() - 0.5) * 80);
-      const edges = new THREE.EdgesGeometry(boxGeometry);
-      const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
-      const outline = new THREE.LineSegments(edges, lineMaterial);
-      box.add(outline);
-      box.userData.boundingBox = new THREE.Box3().setFromObject(box);
-      scene.add(box);
-      boxes.push(box);
-    }
-    for (let i = 0; i < 10; i++) {
-      const boxGeometry = new THREE.BoxGeometry(2, 2, 2);
-      const boxMaterial = new THREE.MeshStandardMaterial({
-        color: 0x0000ff,
-        emissive: 0x0000ff,
-        emissiveIntensity: 0.2,
-        transparent: true,
-        opacity: 0.5,
-        metalness: 0.2,
-        roughness: 0.8
-      });
-      const box = new THREE.Mesh(boxGeometry, boxMaterial);
-      box.position.set((Math.random() - 0.5) * 80, 1, (Math.random() - 0.5) * 80);
-      const edges = new THREE.EdgesGeometry(boxGeometry);
-      const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
-      const outline = new THREE.LineSegments(edges, lineMaterial);
-      box.add(outline);
-      box.userData.boundingBox = new THREE.Box3().setFromObject(box);
-      scene.add(box);
-      boxes.push(box);
-    }
-
-    const flagGeometry = new THREE.PlaneGeometry(3, 2, 32, 32);
-    const redFlagMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide });
-    const blueFlagMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff, side: THREE.DoubleSide });
-
-    const redFlag = new THREE.Mesh(flagGeometry, redFlagMaterial);
-    const blueFlag = new THREE.Mesh(flagGeometry, blueFlagMaterial);
-    redFlag.position.set(-20, 1.5, 0);
-    blueFlag.position.set(20, 1.5, 0);
-    redFlag.rotation.y = Math.PI / 2;
-    blueFlag.rotation.y = Math.PI / 2;
-    redFlag.userData = { team: 'red', isCaptured: false, carrier: null };
-    blueFlag.userData = { team: 'blue', isCaptured: false, carrier: null };
-    scene.add(redFlag, blueFlag);
-
-    let player, mixer, walkAction, runAction, currentAction, gun;
-    let isPlayerAlive = true;
-    let isAutoFire = false;
-    let isFiring = false;
-    let autoFireTimer = 0;
-    let gameTime = 120;
-    let gameOver = false;
-    let gameStarted = false;
-    const redTeam = [];
-    const blueTeam = [];
-    const collectibles = [];
-    const projectiles = [];
-    const particles = [];
-    const energyBars = [];
-    let gunsCollected = 0;
-    let energyCollected = 0;
-    let shieldsCollected = 0;
-    let redTeamKills = 0;
-    let blueTeamKills = 0;
-    let redTeamCaptures = 0;
-    let blueTeamCaptures = 0;
-    const loader = new THREE.GLTFLoader();
-    const modelUrl = 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/gltf/Soldier.glb';
-
-    function createGun() {
-      const gunGroup = new THREE.Group();
-      const bodyGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.6, 16);
-      const barrelGeometry = new THREE.CylinderGeometry(0.04, 0.04, 0.4, 16);
-      const handleGeometry = new THREE.BoxGeometry(0.12, 0.24, 0.16);
-      const material = new THREE.MeshStandardMaterial({ 
-        color: 0x333333, 
-        metalness: 0.8, 
-        roughness: 0.2, 
-        emissive: 0xffffff, 
-        emissiveIntensity: 1.0 
-      });
-
-      const body = new THREE.Mesh(bodyGeometry, material);
-      const barrel = new THREE.Mesh(barrelGeometry, material);
-      const handle = new THREE.Mesh(handleGeometry, material);
-
-      body.rotation.x = Math.PI / 2;
-      barrel.rotation.x = Math.PI / 2;
-      barrel.position.z = 0.5;
-      handle.position.set(0, -0.16, -0.08);
-
-      gunGroup.add(body, barrel, handle);
-      gunGroup.rotation.y = Math.PI;
-      return gunGroup;
-    }
-
-    function createHeartGeometry() {
-      const shape = new THREE.Shape();
-      shape.moveTo(0, 0.4);
-      shape.quadraticCurveTo(-0.4, 0.4, -0.4, 0);
-      shape.quadraticCurveTo(-0.4, -0.4, 0, -0.8);
-      shape.quadraticCurveTo(0.4, -0.4, 0.4, 0);
-      shape.quadraticCurveTo(0.4, 0.4, 0, 0.4);
-      const extrudeSettings = { depth: 0.2, bevelEnabled: false };
-      return new THREE.ExtrudeGeometry(shape, extrudeSettings);
-    }
-
-    function createShieldGeometry() {
-      const shape = new THREE.Shape();
-      const radius = 0.5;
-      const segments = 6;
-      for (let i = 0; i < segments; i++) {
-        const theta = (i / segments) * Math.PI * 2;
-        const x = radius * Math.cos(theta);
-        const y = radius * Math.sin(theta);
-        if (i === 0) shape.moveTo(x, y);
-        else shape.lineTo(x, y);
-      }
-      shape.closePath();
-      const extrudeSettings = { depth: 0.1, bevelEnabled: false };
-      return new THREE.ExtrudeGeometry(shape, extrudeSettings);
-    }
-
-    function createCollectibles() {
-      collectibles.length = 0;
-      for (let i = 0; i < 12; i++) {
-        const type = collectibleTypes[i % 3];
-        let collectible;
-        if (type.name === 'Gun') {
-          collectible = createGun();
-          collectible.scale.set(1.5, 1.5, 1.5);
-          collectible.rotation.y = 0;
-        } else {
-          collectible = new THREE.Mesh(type.geometry, type.material);
-          collectible.scale.set(type.name === 'Energy' ? 4 : 2, type.name === 'Energy' ? 4 : 2, type.name === 'Energy' ? 4 : 2);
-          collectible.userData.throbTime = Math.random() * Math.PI * 2;
-        }
-        let validPosition = false;
-        let position;
-        while (!validPosition) {
-          position = new THREE.Vector3((Math.random() - 0.5) * 50, type.name === 'Energy' ? 4 : 3, (Math.random() - 0.5) * 50);
-          validPosition = true;
-          for (let box of boxes) {
-            if (position.distanceTo(box.position) < 3) {
-              validPosition = false;
-              break;
+        function createSkier(isNPC = false, colorIndex = 0) {
+            const skierGroup = new THREE.Group();
+            const helmetGeometry = new THREE.SphereGeometry(0.32, 32, 32);
+            const helmetMaterial = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.2 });
+            const helmet = new THREE.Mesh(helmetGeometry, helmetMaterial);
+            helmet.position.set(0, 2.2, 0);
+            skierGroup.add(helmet);
+            const gogglesGeometry = new THREE.BoxGeometry(0.5, 0.1, 0.1);
+            const gogglesMaterial = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8 });
+            const goggles = new THREE.Mesh(gogglesGeometry, gogglesMaterial);
+            goggles.position.set(0, 2.1, 0.3);
+            skierGroup.add(goggles);
+            const torsoGeometry = new THREE.CylinderGeometry(0.4, 0.4, 1, 32);
+            const torsoColor = isNPC ? (colorIndex % 2 === 0 ? 0xFF0000 : 0x0000FF) : 0xFF3333;
+            const torsoMaterial = new THREE.MeshStandardMaterial({ color: torsoColor, roughness: 0.5 });
+            const torso = new THREE.Mesh(torsoGeometry, torsoMaterial);
+            torso.position.set(0, 1.5, 0);
+            skierGroup.add(torso);
+            const armGeometry = new THREE.CylinderGeometry(0.12, 0.12, 0.9, 32);
+            const armMaterial = new THREE.MeshStandardMaterial({ color: torsoColor, roughness: 0.5 });
+            const leftArm = new THREE.Mesh(armGeometry, armMaterial);
+            leftArm.position.set(-0.6, 1.5, 0);
+            leftArm.rotation.z = Math.PI / 4;
+            skierGroup.add(leftArm);
+            const rightArm = new THREE.Mesh(armGeometry, armMaterial);
+            rightArm.position.set(0.6, 1.5, 0);
+            rightArm.rotation.z = -Math.PI / 4;
+            skierGroup.add(rightArm);
+            const poleGeometry = new THREE.CylinderGeometry(0.02, 0.02, 1.5, 16);
+            const poleMaterial = new THREE.MeshStandardMaterial({ color: 0x666666, metalness: 0.5 });
+            const leftPole = new THREE.Mesh(poleGeometry, poleMaterial);
+            leftPole.position.set(-0.65, 1.1, 0.1);
+            leftPole.rotation.set(0, 0, 0);
+            skierGroup.add(leftPole);
+            const rightPole = new THREE.Mesh(poleGeometry, poleMaterial);
+            rightPole.position.set(0.65, 1.1, 0.1);
+            rightPole.rotation.set(0, 0, 0);
+            skierGroup.add(rightPole);
+            const legGeometry = new THREE.CylinderGeometry(0.2, 0.2, 1, 32);
+            const legMaterial = new THREE.MeshStandardMaterial({ color: isNPC ? 0x333333 : 0x3333FF, roughness: 0.5 });
+            const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
+            leftLeg.position.set(-0.3, 0.5, 0);
+            skierGroup.add(leftLeg);
+            const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
+            rightLeg.position.set(0.3, 0.5, 0);
+            skierGroup.add(rightLeg);
+            const skiGeometry = new THREE.BoxGeometry(0.2, 0.05, 2.2);
+            const skiMaterial = new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.3 });
+            const leftSki = new THREE.Mesh(skiGeometry, skiMaterial);
+            leftSki.position.set(-0.3, 0.025, 0);
+            skierGroup.add(leftSki);
+            const rightSki = new THREE.Mesh(skiGeometry, skiMaterial);
+            rightSki.position.set(0.3, 0.025, 0);
+            skierGroup.add(rightSki);
+            skierGroup.rotation.y = Math.PI / 2;
+            if (!isNPC) {
+                skierParts.helmet = helmet;
+                skierParts.goggles = goggles;
+                skierParts.torso = torso;
+                skierParts.leftArm = leftArm;
+                skierParts.rightArm = rightArm;
+                skierParts.leftPole = leftPole;
+                skierParts.rightPole = rightPole;
+                skierParts.leftLeg = leftLeg;
+                skierParts.rightLeg = rightLeg;
+                skierParts.leftSki = leftSki;
+                skierParts.rightSki = rightSki;
             }
-          }
+            return skierGroup;
         }
-        collectible.position.copy(position);
-        collectible.userData = { type: type.name };
-        collectible.visible = true;
-        scene.add(collectible);
-        collectibles.push(collectible);
-      }
-    }
 
-    function createEnergyProgressBar(playerData) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 64;
-      canvas.height = 8;
-      const ctx = canvas.getContext('2d');
-
-      const energyPercent = playerData.energy / 100;
-      ctx.fillStyle = playerData.team === 'blue' ? '#00f' : '#f00';
-      ctx.globalAlpha = playerData.model === player ? 0.7 : 1.0;
-      ctx.fillRect(0, 0, canvas.width * energyPercent, canvas.height);
-      ctx.globalAlpha = 1.0;
-
-      const texture = new THREE.CanvasTexture(canvas);
-      const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
-      const progressBar = new THREE.Sprite(material);
-      progressBar.scale.set(0.5, 0.125, 1);
-      progressBar.position.set(0, 2, 0);
-      playerData.model.add(progressBar);
-      playerData.energyBar = { sprite: progressBar, canvas, ctx };
-      energyBars.push(playerData);
-    }
-
-    function updateEnergyProgressBar(playerData) {
-      const { canvas, ctx, sprite } = playerData.energyBar;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const energyPercent = playerData.energy / 100;
-      ctx.fillStyle = playerData.team === 'blue' ? '#00f' : '#f00';
-      ctx.globalAlpha = playerData.model === player ? 0.7 : 1.0;
-      ctx.fillRect(0, 0, canvas.width * energyPercent, canvas.height);
-      ctx.globalAlpha = 1.0;
-      sprite.material.map.needsUpdate = true;
-    }
-
-    function createBloodEffect(position) {
-      const particleCount = 10;
-      const particleGeometry = new THREE.SphereGeometry(0.05, 8, 8);
-      const particleMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-
-      for (let i = 0; i < particleCount; i++) {
-        const particle = new THREE.Mesh(particleGeometry, particleMaterial);
-        particle.position.copy(position);
-        particle.userData = {
-          velocity: new THREE.Vector3((Math.random() - 0.5) * 0.3, Math.random() * 0.3, (Math.random() - 0.5) * 0.3),
-          lifetime: 0.5
-        };
-        scene.add(particle);
-        particles.push(particle);
-      }
-    }
-
-    loader.load(
-      modelUrl,
-      (gltf) => {
-        player = gltf.scene;
-        player.scale.set(3.5, 3.5, 3.5);
-        let validPosition = false;
-        let startPosition;
-        while (!validPosition) {
-          startPosition = new THREE.Vector3(20, 0, (Math.random() - 0.5) * 50);
-          validPosition = true;
-          for (let box of boxes) {
-            if (startPosition.distanceTo(box.position) < 3) {
-              validPosition = false;
-              break;
-            }
-          }
+        function getTerrainHeight(x) {
+            if (!terrain || !terrain.geometry || !terrain.geometry.attributes.position.array) return 0;
+            const segments = 100;
+            const index = Math.floor((x / -2000) * segments);
+            const maxIndex = segments;
+            const clampedIndex = Math.max(0, Math.min(maxIndex, index));
+            return terrain.geometry.attributes.position.array[clampedIndex * (segments + 1) * 3 + 2] || 0;
         }
-        player.position.copy(startPosition);
-        player.traverse((child) => {
-          if (child.isMesh) {
-            child.material = child.material.clone();
-            child.material.transparent = true;
-            child.material.opacity = 0.5;
-            child.material.emissive.setHex(0x000000);
-            child.material.emissiveIntensity = 0;
-          }
-        });
-        scene.add(player);
 
-        mixer = new THREE.AnimationMixer(player);
-        const animations = gltf.animations;
-        walkAction = mixer.clipAction(animations.find(anim => anim.name === 'Walk') || animations[0]);
-        runAction = mixer.clipAction(animations.find(anim => anim.name === 'Run') || animations[0]);
-        walkAction.setLoop(THREE.LoopRepeat);
-        runAction.setLoop(THREE.LoopRepeat);
-        walkAction.play().paused = true;
-        runAction.play().paused = true;
-        currentAction = walkAction;
-        const playerData = {
-          model: player,
-          mixer,
-          velocity: new THREE.Vector3(0, 0, 0),
-          gun: null,
-          team: 'blue',
-          boundingBox: new THREE.Box3(),
-          energy: 100,
-          targetPosition: null,
-          hasShield: false,
-          originalMaterials: [],
-          shieldPulseTime: 0,
-          carriedFlag: null
-        };
-        player.traverse((child) => {
-          if (child.isMesh) playerData.originalMaterials.push(child.material.clone());
-        });
-        blueTeam.push(playerData);
-        createEnergyProgressBar(playerData);
-
-        for (let i = 0; i < 9; i++) {
-          loader.load(
-            modelUrl,
-            (gltf) => {
-              const npc = gltf.scene;
-              npc.scale.set(3.5, 3.5, 3.5);
-              const isRedTeam = i < 5;
-              let validNpcPosition = false;
-              let npcPosition;
-              while (!validNpcPosition) {
-                npcPosition = new THREE.Vector3(isRedTeam ? -20 : 20, 0, (Math.random() - 0.5) * 50);
-                validNpcPosition = true;
-                for (let box of boxes) {
-                  if (npcPosition.distanceTo(box.position) < 3) {
-                    validNpcPosition = false;
-                    break;
-                  }
+        function generatePerlinNoise(width, depth, scale) {
+            const noise = new Array(width * depth);
+            for (let i = 0; i < width; i++) {
+                for (let j = 0; j < depth; j++) {
+                    const x = i / width * scale;
+                    const y = j / depth * scale;
+                    noise[i + j * width] = (Math.sin(x * 2) + Math.sin(y * 2) + Math.sin(x * y)) * 0.5;
                 }
-              }
-              npc.position.copy(npcPosition);
-              npc.traverse((child) => {
-                if (child.isMesh) {
-                  child.material = child.material.clone();
-                  child.material.transparent = true;
-                  child.material.opacity = 0.5;
-                  child.material.emissive.setHex(0x000000);
-                  child.material.emissiveIntensity = 0;
-                }
-              });
-              scene.add(npc);
-
-              const npcMixer = new THREE.AnimationMixer(npc);
-              const npcWalk = npcMixer.clipAction(animations.find(anim => anim.name === 'Walk') || animations[0]);
-              const npcRun = npcMixer.clipAction(animations.find(anim => anim.name === 'Run') || animations[0]);
-              npcWalk.setLoop(THREE.LoopRepeat);
-              npcRun.setLoop(THREE.LoopRepeat);
-              npcWalk.play();
-              npcRun.play().paused = true;
-
-              const npcData = {
-                model: npc,
-                mixer: npcMixer,
-                velocity: new THREE.Vector3((Math.random() - 0.5) * 0.05, 0, (Math.random() - 0.5) * 0.05),
-                changeDirectionTime: Math.random() * 5,
-                gun: null,
-                team: isRedTeam ? 'red' : 'blue',
-                boundingBox: new THREE.Box3(),
-                energy: 100,
-                targetPosition: null,
-                currentAction: npcWalk,
-                runAction: npcRun,
-                hasShield: false,
-                originalMaterials: [],
-                shieldPulseTime: Math.random() * Math.PI * 2,
-                isFiring: false,
-                carriedFlag: null
-              };
-              npc.traverse((child) => {
-                if (child.isMesh) npcData.originalMaterials.push(child.material.clone());
-              });
-              if (isRedTeam) redTeam.push(npcData);
-              else blueTeam.push(npcData);
-              createEnergyProgressBar(npcData);
-            },
-            undefined,
-            (error) => {
-              console.error('Error loading NPC model:', error);
-              if (gameStarted) showFlashMessage('Failed to load NPC model.');
             }
-          );
-        }
-        createCollectibles();
-      },
-      undefined,
-      (error) => {
-        console.error('Error loading player model:', error);
-        if (gameStarted) showFlashMessage('Failed to load player model.');
-      }
-    );
-
-    const collectibleTypes = [
-      { name: 'Gun', geometry: null, material: new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8, roughness: 0.2, emissive: 0xffffff, emissiveIntensity: 1.0 }) },
-      { name: 'Energy', geometry: createHeartGeometry(), material: new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide, transparent: false, opacity: 1.0 }) },
-      { name: 'Shield', geometry: createShieldGeometry(), material: new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide }) }
-    ];
-
-    const flashMessage = document.getElementById('flashMessage');
-    function showFlashMessage(text, duration = 2000) {
-      flashMessage.textContent = text;
-      flashMessage.style.display = 'block';
-      setTimeout(() => flashMessage.style.display = 'none', duration);
-    }
-
-    const gameOverScreen = document.getElementById('gameOverScreen');
-    const restartButton = document.getElementById('restartButton');
-    function showGameOver(message = 'Game Over') {
-      gameOverScreen.textContent = message;
-      gameOverScreen.style.display = 'flex';
-      restartButton.style.display = 'block';
-      gameOver = true;
-    }
-
-    const welcomeScreen = document.getElementById('welcomeScreen');
-    const startButton = document.getElementById('startButton');
-    let startButtonThrobTime = 0;
-
-    startButton.addEventListener('click', () => {
-      welcomeScreen.style.display = 'none';
-      gameStarted = true;
-      collectibles.forEach(collectible => collectible.visible = true);
-    });
-
-    const timerDiv = document.getElementById('timer');
-    function updateTimer(delta) {
-      if (!gameOver) {
-        gameTime -= delta;
-        timerDiv.textContent = Math.ceil(gameTime);
-        if (gameTime <= 0) {
-          showGameOver('Time Up!');
-        }
-      }
-    }
-
-    const lightingSlider = document.getElementById('lightingSlider');
-    lightingSlider.addEventListener('input', () => {
-      ambientLight.intensity = parseFloat(lightingSlider.value);
-    });
-
-    const cameraDistanceSlider = document.getElementById('cameraDistanceSlider');
-    let cameraDistance = 7;
-
-    cameraDistanceSlider.addEventListener('input', () => {
-      cameraDistance = parseFloat(cameraDistanceSlider.value);
-    });
-
-    function handleSingleInput(event, isTouch) {
-      if (!player || !isPlayerAlive || gameOver || gunsCollected === 0 || !gameStarted) return;
-      const clientX = isTouch ? event.changedTouches[0].clientX : event.clientX;
-      const clientY = isTouch ? event.changedTouches[0].clientY : event.clientY;
-      const raycaster = new THREE.Raycaster();
-      const mouse = new THREE.Vector2();
-      mouse.x = (clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(clientY / window.innerHeight) * 2 + 1;
-      raycaster.setFromCamera(mouse, activeCamera);
-      const intersects = raycaster.intersectObject(floor);
-      if (intersects.length > 0) {
-        const targetPos = intersects[0].point;
-        const direction = targetPos.clone().sub(player.position).setY(0).normalize();
-        player.rotation.y = Math.atan2(-direction.x, -direction.z);
-        isFiring = true;
-        const projectile = new THREE.Mesh(
-          new THREE.SphereGeometry(0.1, 8, 8),
-          new THREE.MeshBasicMaterial({ color: 0x0000ff })
-        );
-        projectile.position.copy(player.position).addScaledVector(direction, 3.5).add(new THREE.Vector3(0, 3.5, 0));
-        projectile.userData = { velocity: direction.multiplyScalar(0.2), team: 'blue' };
-        scene.add(projectile);
-        projectiles.push(projectile);
-        setTimeout(() => { isFiring = false; }, 200);
-      }
-    }
-
-    document.addEventListener('touchstart', (event) => handleSingleInput(event, true));
-    document.addEventListener('click', (event) => handleSingleInput(event, false));
-
-    function resetGame() {
-      redTeam.forEach((npc) => {
-        scene.remove(npc.model);
-        if (npc.gun) scene.remove(npc.gun);
-        if (npc.energyBar) scene.remove(npc.energyBar.sprite);
-        if (npc.carriedFlag) {
-          npc.carriedFlag.userData.isCaptured = false;
-          npc.carriedFlag.userData.carrier = null;
-          npc.carriedFlag.position.copy(npc.carriedFlag.userData.team === 'red' ? new THREE.Vector3(-20, 1.5, 0) : new THREE.Vector3(20, 1.5, 0));
-          scene.add(npc.carriedFlag);
-        }
-      });
-      blueTeam.forEach((npc) => {
-        scene.remove(npc.model);
-        if (npc.gun) scene.remove(npc.gun);
-        if (npc.energyBar) scene.remove(npc.energyBar.sprite);
-        if (npc.carriedFlag) {
-          npc.carriedFlag.userData.isCaptured = false;
-          npc.carriedFlag.userData.carrier = null;
-          npc.carriedFlag.position.copy(npc.carriedFlag.userData.team === 'red' ? new THREE.Vector3(-20, 1.5, 0) : new THREE.Vector3(20, 1.5, 0));
-          scene.add(npc.carriedFlag);
-        }
-      });
-      collectibles.forEach((collectible) => scene.remove(collectible));
-      projectiles.forEach((projectile) => scene.remove(projectile));
-      particles.forEach((particle) => scene.remove(particle));
-
-      redTeam.length = 0;
-      blueTeam.length = 0;
-      collectibles.length = 0;
-      projectiles.length = 0;
-      particles.length = 0;
-      energyBars.length = 0;
-      gunsCollected = 0;
-      energyCollected = 0;
-      shieldsCollected = 0;
-      redTeamKills = 0;
-      blueTeamKills = 0;
-      redTeamCaptures = 0;
-      blueTeamCaptures = 0;
-      isPlayerAlive = true;
-      isAutoFire = false;
-      isFiring = false;
-      autoFireTimer = 0;
-      gameTime = 120;
-      gameOver = false;
-      gameStarted = false;
-      fireButton.style.display = 'none';
-      autoFireButton.style.display = 'none';
-      gameOverScreen.style.display = 'none';
-      restartButton.style.display = 'none';
-      welcomeScreen.style.display = 'flex';
-      timerDiv.textContent = '120';
-      lightingSlider.value = 0.5;
-      ambientLight.intensity = 0.5;
-      cameraDistanceSlider.value = 7;
-      cameraDistance = 7;
-
-      redFlag.userData.isCaptured = false;
-      redFlag.userData.carrier = null;
-      redFlag.position.set(-20, 1.5, 0);
-      blueFlag.userData.isCaptured = false;
-      blueFlag.userData.carrier = null;
-      blueFlag.position.set(20, 1.5, 0);
-      scene.add(redFlag, blueFlag);
-
-      loader.load(
-        modelUrl,
-        (gltf) => {
-          player = gltf.scene;
-          player.scale.set(3.5, 3.5, 3.5);
-          let validPosition = false;
-          let startPosition;
-          while (!validPosition) {
-            startPosition = new THREE.Vector3(20, 0, (Math.random() - 0.5) * 50);
-            validPosition = true;
-            for (let box of boxes) {
-              if (startPosition.distanceTo(box.position) < 3) {
-                validPosition = false;
-                break;
-              }
-            }
-          }
-          player.position.copy(startPosition);
-          player.traverse((child) => {
-            if (child.isMesh) {
-              child.material = child.material.clone();
-              child.material.transparent = true;
-              child.material.opacity = 0.5;
-              child.material.emissive.setHex(0x000000);
-              child.material.emissiveIntensity = 0;
-            }
-          });
-          scene.add(player);
-
-          mixer = new THREE.AnimationMixer(player);
-          const animations = gltf.animations;
-          walkAction = mixer.clipAction(animations.find(anim => anim.name === 'Walk') || animations[0]);
-          runAction = mixer.clipAction(animations.find(anim => anim.name === 'Run') || animations[0]);
-          walkAction.setLoop(THREE.LoopRepeat);
-          runAction.setLoop(THREE.LoopRepeat);
-          walkAction.play().paused = true;
-          runAction.play().paused = true;
-          currentAction = walkAction;
-          const playerData = {
-            model: player,
-            mixer,
-            velocity: new THREE.Vector3(0, 0, 0),
-            gun: null,
-            team: 'blue',
-            boundingBox: new THREE.Box3(),
-            energy: 100,
-            targetPosition: null,
-            hasShield: false,
-            originalMaterials: [],
-            shieldPulseTime: 0,
-            carriedFlag: null
-          };
-          player.traverse((child) => {
-            if (child.isMesh) playerData.originalMaterials.push(child.material.clone());
-          });
-          blueTeam.push(playerData);
-          createEnergyProgressBar(playerData);
-
-          for (let i = 0; i < 9; i++) {
-            loader.load(
-              modelUrl,
-              (gltf) => {
-                const npc = gltf.scene;
-                npc.scale.set(3.5, 3.5, 3.5);
-                const isRedTeam = i < 5;
-                let validNpcPosition = false;
-                let npcPosition;
-                while (!validNpcPosition) {
-                  npcPosition = new THREE.Vector3(isRedTeam ? -20 : 20, 0, (Math.random() - 0.5) * 50);
-                  validNpcPosition = true;
-                  for (let box of boxes) {
-                    if (npcPosition.distanceTo(box.position) < 3) {
-                      validNpcPosition = false;
-                      break;
-                    }
-                  }
-                }
-                npc.position.copy(npcPosition);
-                npc.traverse((child) => {
-                  if (child.isMesh) {
-                    child.material = child.material.clone();
-                    child.material.transparent = true;
-                    child.material.opacity = 0.5;
-                    child.material.emissive.setHex(0x000000);
-                    child.material.emissiveIntensity = 0;
-                  }
-                });
-                scene.add(npc);
-
-                const npcMixer = new THREE.AnimationMixer(npc);
-                const npcWalk = npcMixer.clipAction(animations.find(anim => anim.name === 'Walk') || animations[0]);
-                const npcRun = npcMixer.clipAction(animations.find(anim => anim.name === 'Run') || animations[0]);
-                npcWalk.setLoop(THREE.LoopRepeat);
-                npcRun.setLoop(THREE.LoopRepeat);
-                npcWalk.play();
-                npcRun.play().paused = true;
-
-                const npcData = {
-                  model: npc,
-                  mixer: npcMixer,
-                  velocity: new THREE.Vector3((Math.random() - 0.5) * 0.05, 0, (Math.random() - 0.5) * 0.05),
-                  changeDirectionTime: Math.random() * 5,
-                  gun: null,
-                  team: isRedTeam ? 'red' : 'blue',
-                  boundingBox: new THREE.Box3(),
-                  energy: 100,
-                  targetPosition: null,
-                  currentAction: npcWalk,
-                  runAction: npcRun,
-                  hasShield: false,
-                  originalMaterials: [],
-                  shieldPulseTime: Math.random() * Math.PI * 2,
-                  isFiring: false,
-                  carriedFlag: null
-                };
-                npc.traverse((child) => {
-                  if (child.isMesh) npcData.originalMaterials.push(child.material.clone());
-                });
-                if (isRedTeam) redTeam.push(npcData);
-                else blueTeam.push(npcData);
-                createEnergyProgressBar(npcData);
-              },
-              undefined,
-              (error) => {
-                console.error('Error loading NPC model:', error);
-                if (gameStarted) showFlashMessage('Failed to load NPC model.');
-              }
-            );
-          }
-          createCollectibles();
-        },
-        undefined,
-        (error) => {
-          console.error('Error loading player model:', error);
-          if (gameStarted) showFlashMessage('Failed to load player model.');
-        }
-      );
-
-      activeCamera = mainCamera;
-      mainCamera.position.set(20, 17.5, 35);
-      mainControls.target.set(20, 1, 0);
-      mainControls.update();
-    }
-
-    restartButton.addEventListener('click', resetGame);
-
-    const minimapCanvas = document.getElementById('minimap');
-    const minimapCtx = minimapCanvas.getContext('2d');
-    minimapCanvas.width = 250; // Increased from 150
-    minimapCanvas.height = 250; // Increased from 150
-
-    function drawMinimap() {
-      minimapCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
-      minimapCtx.fillStyle = 'rgba(0, 100, 0, 0.5)';
-      minimapCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
-
-      const scale = 5; // Adjusted scale for larger minimap
-      const offset = 125; // Adjusted offset for larger minimap
-
-      if (player && isPlayerAlive) {
-        minimapCtx.fillStyle = 'green';
-        minimapCtx.beginPath();
-        minimapCtx.arc(player.position.x * scale + offset, player.position.z * scale + offset, 8, 0, Math.PI * 2); // Increased size
-        minimapCtx.fill();
-      }
-
-      redTeam.forEach((npc) => {
-        minimapCtx.fillStyle = 'red';
-        minimapCtx.beginPath();
-        minimapCtx.arc(npc.model.position.x * scale + offset, npc.model.position.z * scale + offset, 5, 0, Math.PI * 2); // Increased size
-        minimapCtx.fill();
-      });
-
-      blueTeam.forEach((npc) => {
-        if (npc.model !== player) {
-          minimapCtx.fillStyle = 'blue';
-          minimapCtx.beginPath();
-          minimapCtx.arc(npc.model.position.x * scale + offset, npc.model.position.z * scale + offset, 5, 0, Math.PI * 2); // Increased size
-          minimapCtx.fill();
-        }
-      });
-
-      collectibles.forEach((collectible) => {
-        minimapCtx.fillStyle = collectible.userData.type === 'Gun' ? 'gray' : collectible.userData.type === 'Energy' ? 'red' : 'yellow';
-        minimapCtx.beginPath();
-        minimapCtx.arc(collectible.position.x * scale + offset, collectible.position.z * scale + offset, 3, 0, Math.PI * 2); // Increased size
-        minimapCtx.fill();
-      });
-
-      boxes.forEach((box) => {
-        const color = box.material.color.getHex();
-        minimapCtx.fillStyle = color === 0x00ff00 ? 'green' : color === 0xff0000 ? 'red' : 'blue';
-        minimapCtx.fillRect(
-          box.position.x * scale + offset - 3, // Adjusted size
-          box.position.z * scale + offset - 3, // Adjusted size
-          6, // Increased size
-          6 // Increased size
-        );
-      });
-
-      if (!redFlag.userData.isCaptured) {
-        minimapCtx.fillStyle = 'red';
-        minimapCtx.fillRect(-20 * scale + offset - 3, 0 * scale + offset - 3, 6, 6); // Increased size
-      }
-      if (!blueFlag.userData.isCaptured) {
-        minimapCtx.fillStyle = 'blue';
-        minimapCtx.fillRect(20 * scale + offset - 3, 0 * scale + offset - 3, 6, 6); // Increased size
-      }
-    }
-
-    const statsDiv = document.getElementById('stats');
-    function updateStats() {
-      statsDiv.innerHTML = `
-        Guns Collected: ${gunsCollected}<br>
-        Energy Collected: ${energyCollected}<br>
-        Shields Collected: ${shieldsCollected}<br>
-        Red Team Kills: ${redTeamKills}<br>
-        Blue Team Kills: ${blueTeamKills}<br>
-        Red Team Captures: ${redTeamCaptures}<br>
-        Blue Team Captures: ${blueTeamCaptures}<br>
-        Player Pos: (${player && isPlayerAlive ? player.position.x.toFixed(1) : 0}, ${player && isPlayerAlive ? player.position.z.toFixed(1) : 0})<br>
-        Player Energy: ${blueTeam[0] ? blueTeam[0].energy : 0}
-      `;
-    }
-
-    let cameraMode = 'main';
-    mainCamera.position.set(20, 17.5, 35);
-    const mainControls = new THREE.OrbitControls(mainCamera, renderer.domElement);
-    mainControls.target.set(20, 1, 0);
-    mainControls.enablePan = true;
-    mainControls.minDistance = 5;
-    mainControls.maxDistance = 100;
-    mainControls.update();
-
-    const playerControls = new THREE.OrbitControls(playerCamera, renderer.domElement);
-    playerControls.enablePan = false;
-    playerControls.minDistance = 2;
-    playerControls.maxDistance = 10;
-    playerControls.enableZoom = false;
-    playerControls.enabled = false;
-
-    const toggleCameraButton = document.getElementById('toggleCameraButton');
-    toggleCameraButton.addEventListener('click', () => {
-      if (!isPlayerAlive || gameOver || !gameStarted) return;
-      if (cameraMode === 'main') {
-        cameraMode = 'player';
-        toggleCameraButton.textContent = 'Switch to Main View';
-        activeCamera = playerCamera;
-        mainControls.enabled = false;
-        playerControls.enabled = true;
-        if (player) {
-          playerControls.target.copy(player.position);
-          playerControls.target.y = 3.5;
-          playerControls.update();
-        }
-      } else {
-        cameraMode = 'main';
-        toggleCameraButton.textContent = 'Switch to Player View';
-        activeCamera = mainCamera;
-        mainControls.enabled = true;
-        playerControls.enabled = false;
-        if (player) {
-          mainCamera.position.set(player.position.x, 17.5, player.position.z + 35);
-          mainControls.target.copy(player.position);
-          mainControls.target.y = 3.5;
-          mainControls.update();
-        }
-      }
-    });
-
-    const fireButton = document.getElementById('fireButton');
-    fireButton.addEventListener('click', () => {
-      if (gunsCollected > 0 && player && isPlayerAlive && !gameOver && gameStarted) {
-        isFiring = true;
-        const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion);
-        const projectile = new THREE.Mesh(
-          new THREE.SphereGeometry(0.1, 8, 8),
-          new THREE.MeshBasicMaterial({ color: 0x0000ff })
-        );
-        projectile.position.copy(player.position).addScaledVector(direction, 3.5).add(new THREE.Vector3(0, 3.5, 0));
-        projectile.userData = { velocity: direction.multiplyScalar(0.2), team: 'blue' };
-        scene.add(projectile);
-        projectiles.push(projectile);
-        setTimeout(() => { isFiring = false; }, 200);
-      }
-    });
-
-    const autoFireButton = document.getElementById('autoFireButton');
-    autoFireButton.addEventListener('click', () => {
-      if (isPlayerAlive && gunsCollected > 0 && !gameOver && gameStarted) {
-        isAutoFire = !isAutoFire;
-        autoFireButton.textContent = isAutoFire ? 'Disable Auto-Fire' : 'Enable Auto-Fire';
-      }
-    });
-
-    const joystickContainer = document.getElementById('joystickContainer');
-    const joystick = nipplejs.create({
-      zone: joystickContainer,
-      mode: 'static',
-      position: { left: '50%', top: '50%' },
-      color: 'blue'
-    });
-    let joystickVector = new THREE.Vector2(0, 0);
-
-    joystick.on('move', (evt, data) => {
-      if (isPlayerAlive && !gameOver && gameStarted) {
-        joystickVector.set(data.vector.x, -data.vector.y);
-      }
-    });
-    joystick.on('end', () => {
-      joystickVector.set(0, 0);
-    });
-
-    const moveSpeed = 0.1;
-    const runSpeed = 0.15;
-    const jumpForce = 5;
-    let velocity = new THREE.Vector3(0, 0, 0);
-    let isJumping = false;
-    const collisionRadius = 2.0;
-
-    document.addEventListener('keydown', (event) => {
-      if (event.key === ' ' && !isJumping && isPlayerAlive && !gameOver && gameStarted) {
-        velocity.y = jumpForce;
-        isJumping = true;
-      }
-    });
-
-    function createExplosion(position, team) {
-      const particleCount = 20;
-      const particleGeometry = new THREE.SphereGeometry(0.1, 8, 8);
-      const particleMaterial = new THREE.MeshBasicMaterial({ color: team === 'blue' ? 0x0000ff : 0xff0000 });
-
-      for (let i = 0; i < particleCount; i++) {
-        const particle = new THREE.Mesh(particleGeometry, particleMaterial);
-        particle.position.copy(position);
-        particle.userData = {
-          velocity: new THREE.Vector3((Math.random() - 0.5) * 0.5, Math.random() * 0.5, (Math.random() - 0.5) * 0.5),
-          lifetime: 1.0
-        };
-        scene.add(particle);
-        particles.push(particle);
-      }
-    }
-
-    function avoidCollisions(npc, velocity, allPlayers) {
-      let avoidanceVector = new THREE.Vector3(0, 0, 0);
-      allPlayers.forEach((other) => {
-        if (other !== npc && other.model.position) {
-          const distance = npc.model.position.distanceTo(other.model.position);
-          if (distance < collisionRadius && distance > 0) {
-            const awayVector = npc.model.position.clone().sub(other.model.position).normalize();
-            const weight = (collisionRadius - distance) / collisionRadius;
-            avoidanceVector.add(awayVector.multiplyScalar(weight * 0.1));
-          }
-        }
-      });
-
-      const newPosition = npc.model.position.clone().add(velocity);
-      boxes.forEach((box) => {
-        const boxBox = box.userData.boundingBox;
-        const npcBox = npc.boundingBox.clone().translate(velocity);
-        if (npcBox.intersectsBox(boxBox)) {
-          const directionToBox = box.position.clone().sub(npc.model.position).normalize();
-          avoidanceVector.add(directionToBox.multiplyScalar(-0.1));
-        }
-      });
-
-      return velocity.clone().add(avoidanceVector);
-    }
-
-    const clock = new THREE.Clock();
-    let globalTime = 0;
-
-    function animate() {
-      requestAnimationFrame(animate);
-      const delta = clock.getDelta();
-      globalTime += delta;
-
-      if (!gameStarted) {
-        startButtonThrobTime += delta;
-        const scale = 1 + 0.1 * Math.sin(startButtonThrobTime * 3);
-        startButton.style.transform = `scale(${scale})`;
-        renderer.render(scene, activeCamera);
-        return;
-      }
-
-      updateTimer(delta);
-
-      if (gameOver) {
-        renderer.render(scene, activeCamera);
-        return;
-      }
-
-      const allPlayers = [...redTeam, ...blueTeam];
-
-      if (player && mixer && isPlayerAlive) {
-        const joystickMagnitude = joystickVector.length();
-        if (joystickMagnitude > 0.1) {
-          const speed = joystickMagnitude > 0.7 ? runSpeed : moveSpeed;
-          velocity.x = joystickVector.x * speed;
-          velocity.z = joystickVector.y * speed;
-          if (!isFiring) {
-            const nextAction = joystickMagnitude > 0.7 ? runAction : walkAction;
-            if (currentAction !== nextAction) {
-              currentAction.fadeOut(0.2);
-              nextAction.reset().fadeIn(0.2).play();
-              currentAction = nextAction;
-            }
-            currentAction.paused = false;
-            currentAction.timeScale = joystickMagnitude > 0.7 ? 2.0 : 1.5;
-          }
-        } else {
-          velocity.x = 0;
-          velocity.z = 0;
-          if (!isFiring) {
-            currentAction.paused = true;
-          }
+            return noise;
         }
 
-        if (velocity.x !== 0 || velocity.z !== 0) {
-          const angle = Math.atan2(-velocity.x, -velocity.z);
-          player.rotation.y = angle;
-          if (!isFiring) {
-            const nextAction = velocity.length() > moveSpeed ? runAction : walkAction;
-            if (currentAction !== nextAction) {
-              currentAction.fadeOut(0.2);
-              nextAction.reset().fadeIn(0.2).play();
-              currentAction = nextAction;
-            }
-            currentAction.paused = false;
-          }
-        } else if (!isFiring) {
-          currentAction.paused = true;
-        }
-
-        velocity = avoidCollisions(blueTeam[0], velocity, allPlayers);
-        velocity.y -= 0.01;
-        player.position.add(velocity);
-
-        if (player.position.y <= 0) {
-          player.position.y = 0;
-          velocity.y = 0;
-          isJumping = false;
-        }
-
-        blueTeam[0].boundingBox.setFromObject(player);
-
-        if (!redFlag.userData.isCaptured) {
-          const distanceToRedFlag = player.position.distanceTo(redFlag.position);
-          if (distanceToRedFlag < 3.5 && !blueTeam[0].carriedFlag) {
-            redFlag.userData.isCaptured = true;
-            redFlag.userData.carrier = blueTeam[0];
-            blueTeam[0].carriedFlag = redFlag;
-            scene.remove(redFlag);
-            player.add(redFlag);
-            redFlag.position.set(0, 1.5, 0.5);
-            redFlag.scale.set(0.5, 0.5, 0.5);
-            showFlashMessage('Red Flag Captured!');
-            blueTeam[0].targetPosition = new THREE.Vector3(20, 0, 0);
-          }
-        }
-
-        if (blueTeam[0].carriedFlag && blueTeam[0].carriedFlag.userData.team === 'red') {
-          const distanceToBlueBase = player.position.distanceTo(new THREE.Vector3(20, 0, 0));
-          if (distanceToBlueBase < 3.5) {
-            blueTeamCaptures++;
-            blueTeam[0].carriedFlag.userData.isCaptured = false;
-            blueTeam[0].carriedFlag.userData.carrier = null;
-            blueTeam[0].carriedFlag.position.set(-20, 1.5, 0);
-            blueTeam[0].carriedFlag.scale.set(1, 1, 1);
-            scene.add(blueTeam[0].carriedFlag);
-            player.remove(blueTeam[0].carriedFlag);
-            blueTeam[0].carriedFlag = null;
-            showFlashMessage('Blue Team Scored!');
-          }
-        }
-
-        collectibles.forEach((collectible, index) => {
-          if (!collectible.position) return;
-          const distance = player.position.distanceTo(collectible.position);
-          if (distance < 3.5) {
-            scene.remove(collectible);
-            collectibles.splice(index, 1);
-            if (collectible.userData.type === 'Gun') {
-              gunsCollected++;
-              showFlashMessage('Collected Gun!');
-              if (!gun) {
-                gun = createGun();
-                gun.position.set(0.4, 0.8, 0.02);
-                gun.scale.set(0.75, 0.75, 0.75);
-                player.add(gun);
-                fireButton.style.display = 'block';
-                autoFireButton.style.display = 'block';
-                blueTeam[0].gun = gun;
-              }
-            } else if (collectible.userData.type === 'Energy') {
-              energyCollected++;
-              blueTeam[0].energy = Math.min(blueTeam[0].energy + 10, 100);
-              updateEnergyProgressBar(blueTeam[0]);
-              showFlashMessage('Collected Energy!');
-            } else if (collectible.userData.type === 'Shield') {
-              shieldsCollected++;
-              blueTeam[0].hasShield = true;
-              player.traverse((child) => {
-                if (child.isMesh) {
-                  child.material.emissive.setHex(0xffff00);
-                  child.material.emissiveIntensity = 0.3;
-                }
-              });
-              showFlashMessage('Collected Shield!');
-            }
-          }
-        });
-
-        if (isAutoFire && gunsCollected > 0) {
-          autoFireTimer += delta;
-          if (autoFireTimer >= 0.5) {
-            isFiring = true;
-            const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion);
-            const projectile = new THREE.Mesh(
-              new THREE.SphereGeometry(0.1, 8, 8),
-              new THREE.MeshBasicMaterial({ color: 0x0000ff })
-            );
-            projectile.position.copy(player.position).addScaledVector(direction, 3.5).add(new THREE.Vector3(0, 3.5, 0));
-            projectile.userData = { velocity: direction.multiplyScalar(0.2), team: 'blue' };
-            scene.add(projectile);
-            projectiles.push(projectile);
-            autoFireTimer = 0;
-            setTimeout(() => { isFiring = false; }, 200);
-          }
-        }
-
-        if (blueTeam[0].hasShield) {
-          blueTeam[0].shieldPulseTime += delta;
-          const intensity = 0.2 + 0.1 * Math.sin(blueTeam[0].shieldPulseTime);
-          player.traverse((child) => {
-            if (child.isMesh) {
-              child.material.emissiveIntensity = intensity;
-            }
-          });
-        }
-
-        if (cameraMode === 'main') {
-          if (player) {
-            mainCamera.position.set(player.position.x, 17.5, player.position.z + 35);
-            mainControls.target.set(player.position.x, player.position.y + 3.5, player.position.z);
-            mainControls.update();
-          }
-        } else if (cameraMode === 'player') {
-          const offset = new THREE.Vector3(0, 7, cameraDistance).applyQuaternion(player.quaternion);
-          playerCamera.position.copy(player.position).add(offset);
-          playerControls.target.set(player.position.x, player.position.y + 3.5, player.position.z);
-          playerControls.update();
-        }
-
-        mixer.update(delta);
-      }
-
-      [redTeam, blueTeam].forEach((team) => {
-        team.forEach((npc, index) => {
-          if (npc.model !== player) {
-            const { velocity, changeDirectionTime } = npc;
-            let evasionVector = new THREE.Vector3(0, 0, 0);
-            const enemyTeam = npc.team === 'red' ? 'blue' : 'red';
-            projectiles.forEach((projectile) => {
-              if (projectile.userData.team === enemyTeam) {
-                const distance = npc.model.position.distanceTo(projectile.position);
-                if (distance < 5) {
-                  const awayVector = npc.model.position.clone().sub(projectile.position).normalize();
-                  evasionVector.add(awayVector.multiplyScalar(0.1));
-                }
-              }
+        function createTerrain() {
+            const width = 4000, depth = 400, segments = 100;
+            const geometry = new THREE.PlaneGeometry(width, depth, segments, segments);
+            const material = new THREE.MeshStandardMaterial({
+                color: 0xF5F6F5,
+                roughness: 0.9,
+                metalness: 0.1,
+                bumpScale: 0.2
             });
-            let totalVelocity = velocity.clone().add(evasionVector);
-            npc.changeDirectionTime -= delta;
-            if (npc.changeDirectionTime <= 0) {
-              velocity.set((Math.random() - 0.5) * 0.05, 0, (Math.random() - 0.5) * 0.05);
-              npc.changeDirectionTime = Math.random() * 5;
-            }
-            if (totalVelocity.length() > 0 && !npc.isFiring) {
-              npc.currentAction.paused = false;
-              npc.currentAction.timeScale = 1.5;
-            } else if (!npc.isFiring) {
-              npc.currentAction.paused = true;
-            }
-
-            const targetFlag = npc.team === 'red' ? blueFlag : redFlag;
-            const targetBase = npc.team === 'red' ? new THREE.Vector3(-20, 0, 0) : new THREE.Vector3(20, 0, 0);
-
-            if (!targetFlag.userData.isCaptured) {
-              const distanceToFlag = npc.model.position.distanceTo(targetFlag.position);
-              if (distanceToFlag < 3.5 && !npc.carriedFlag) {
-                targetFlag.userData.isCaptured = true;
-                targetFlag.userData.carrier = npc;
-                npc.carriedFlag = targetFlag;
-                scene.remove(targetFlag);
-                npc.model.add(targetFlag);
-                targetFlag.position.set(0, 1.5, 0.5);
-                targetFlag.scale.set(0.5, 0.5, 0.5);
-                showFlashMessage(`${npc.team === 'red' ? 'Red' : 'Blue'} Team Captured ${targetFlag.userData.team === 'red' ? 'Red' : 'Blue'} Flag!`);
-                npc.targetPosition = targetBase.clone();
-              }
-            }
-
-            if (npc.carriedFlag) {
-              const distanceToBase = npc.model.position.distanceTo(targetBase);
-              if (distanceToBase < 3.5) {
-                if (npc.team === 'red') redTeamCaptures++;
-                else blueTeamCaptures++;
-                npc.carriedFlag.userData.isCaptured = false;
-                npc.carriedFlag.userData.carrier = null;
-                npc.carriedFlag.position.copy(npc.carriedFlag.userData.team === 'red' ? new THREE.Vector3(-20, 1.5, 0) : new THREE.Vector3(20, 1.5, 0));
-                npc.carriedFlag.scale.set(1, 1, 1);
-                scene.add(npc.carriedFlag);
-                npc.model.remove(npc.carriedFlag);
-                npc.carriedFlag = null;
-                showFlashMessage(`${npc.team === 'red' ? 'Red' : 'Blue'} Team Scored!`);
-                npc.targetPosition = null;
-              }
-            }
-
-            totalVelocity = avoidCollisions(npc, totalVelocity, allPlayers);
-            npc.model.position.add(totalVelocity);
-            const angle = Math.atan2(-totalVelocity.x, -totalVelocity.z);
-            if (totalVelocity.length() > 0) {
-              npc.model.rotation.y = angle;
-              if (!npc.isFiring) {
-                npc.currentAction.paused = false;
-                npc.currentAction.timeScale = 1.5;
-              }
-            } else if (!npc.isFiring) {
-              npc.currentAction.paused = true;
-            }
-
-            if (npc.model.position.y <= 0) npc.model.position.y = 0;
-            npc.model.position.clamp(new THREE.Vector3(-50, 0, -50), new THREE.Vector3(50, 0, 50));
-            npc.boundingBox.setFromObject(npc.model);
-
-            collectibles.forEach((collectible, cIndex) => {
-              if (!collectible.position) return;
-              const distance = npc.model.position.distanceTo(collectible.position);
-              if (distance < 3.5) {
-                scene.remove(collectible);
-                collectibles.splice(cIndex, 1);
-                if (collectible.userData.type === 'Gun' && !npc.gun) {
-                  npc.gun = createGun();
-                  npc.gun.position.set(0.4, 0.8, 0.02);
-                  npc.gun.scale.set(0.75, 0.75, 0.75);
-                  npc.model.add(npc.gun);
-                } else if (collectible.userData.type === 'Shield') {
-                  npc.hasShield = true;
-                  npc.model.traverse((child) => {
-                    if (child.isMesh) {
-                      child.material.emissive.setHex(0xffff00);
-                      child.material.emissiveIntensity = 0.3;
-                    }
-                  });
+            const terrain = new THREE.Mesh(geometry, material);
+            terrain.rotation.x = -Math.PI / 2;
+            //terrain.rotation.y = Math.PI / 2;
+            const noise = generatePerlinNoise(segments + 1, segments + 1, 10);
+            const vertices = geometry.attributes.position.array;
+            for (let i = 0; i <= segments; i++) {
+                for (let j = 0; j <= segments; j++) {
+                    const index = (i * (segments + 1) + j) * 3;
+                    let z = 20 + noise[i + j * (segments + 1)] * 10 - (i / segments) * 60;
+                    if (i > segments * 0.15 && i < segments * 0.175) z -= (i / segments - 0.15) * 150;
+                    if (i > segments * 0.25 && i < segments * 0.275) z -= (i / segments - 0.25) * 150;
+                    if (i > segments * 0.35 && i < segments * 0.375) z -= (i / segments - 0.35) * 150;
+                    vertices[index + 2] = z;
                 }
-              }
+            }
+            geometry.attributes.position.needsUpdate = true;
+            geometry.computeVertexNormals();
+            return terrain;
+        }
+
+        function createTree(x, z) {
+            const treeGroup = new THREE.Group();
+            const trunkGeometry = new THREE.CylinderGeometry(0.2, 0.2, 2, 16);
+            const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+            const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+            trunk.position.set(0, 1, 0);
+            treeGroup.add(trunk);
+            const foliageGeometry = new THREE.ConeGeometry(1, 3, 16);
+            const foliageMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 });
+            const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
+            foliage.position.set(0, 2.5, 0);
+            treeGroup.add(foliage);
+            const terrainHeight = getTerrainHeight(x);
+            treeGroup.position.set(x, terrainHeight, z);
+            return treeGroup;
+        }
+
+        function createNPC(x, z, colorIndex) {
+            const npc = createSkier(true, colorIndex);
+            npc.position.set(x, 0, z);
+            npc.userData = { 
+                speed: 10 + Math.random() * 10, 
+                knockedOver: false, 
+                knockOverTimer: 0, 
+                spinAngle: 0, 
+                trails: { left: [], right: [] },
+                lateralOffset: Math.random() * 100
+            };
+            return npc;
+        }
+
+        function createCollectable(type, x, z) {
+            const geometry = new THREE.SphereGeometry(0.7, 32, 32);
+            let color;
+            if (type === 'speed') color = 0xFFA500;
+            else if (type === 'life') color = 0xFF0000;
+            else color = 0xFFFFFF; //
+            const material = new THREE.MeshStandardMaterial({ 
+                color: color,
+                emissive: color, 
+                emissiveIntensity: 0.5,
+                roughness: 0.5 }
+            );
+            const collectable = new THREE.Mesh(geometry, material);
+            const terrainHeight = getTerrainHeight(x);
+            collectable.position.set(x, terrainHeight + 1.5, z);
+            collectable.userData = { type, baseScale: 0.7, pulseTime: Math.random() * Math.PI * 2, baseY: terrainHeight + 1.5 };
+            return collectable;
+        }
+
+        function createSnowball(target) {
+            const geometry = new THREE.SphereGeometry(0.3, 16, 16);
+            const material = new THREE.MeshStandardMaterial({ 
+                color: 0xFFFFFF, 
+                emissive: 0xFFFFFF, 
+                emissiveIntensity: 0.5, 
+                roughness: 0.5 
+            });
+            const snowball = new THREE.Mesh(geometry, material);
+            snowball.renderOrder = 1;
+            const startPos = skierParts.rightArm.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(-2, 0, 0));
+            const targetPos = target.position.clone();
+            const targetVel = new THREE.Vector3(-target.userData.speed, 0, Math.sin(time * 0.5 + target.userData.lateralOffset) * 2);
+            const relativeVel = targetVel.clone().sub(new THREE.Vector3(-currentSpeed, 0, 0));
+            const dist = startPos.distanceTo(targetPos); 
+            const timeToHit = dist / 40; // speed of snowball
+            const predictedPos = targetPos.clone().add(relativeVel.multiplyScalar(timeToHit)); // predict target position
+            snowball.position.copy(startPos); 
+            snowball.userData = { 
+                target, 
+                velocity: predictedPos.sub(startPos).normalize().multiplyScalar(55), // speed of snowball
+                startTime: time,
+                trail: [],
+                lastTrailTime: 0 
+            };
+            return snowball;
+        }
+
+        function createTrailParticle(x, z, time, isNPC = false) {
+            const geometry = new THREE.SphereGeometry(0.1, 8, 8); // Create a sphere for the trail particle
+            const material = new THREE.MeshStandardMaterial({ 
+                color: isNPC ? 0xB0B0B0 : 0x808080, 
+                transparent: true, 
+                opacity: isNPC ? 0.3 : 0.6 
+            });
+            const particle = new THREE.Mesh(geometry, material);
+            const terrainHeight = getTerrainHeight(x);
+            particle.position.set(x, terrainHeight + 0.05, z);
+            particle.userData = { time: time };
+            return particle;
+        }
+
+        function createSnowballTrailParticle(x, y, z, time) {
+            const geometry = new THREE.SphereGeometry(0.2, 16, 16);
+            const material = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.6 });
+            const particle = new THREE.Mesh(geometry, material);
+            particle.position.set(x, y, z);
+            particle.userData = { time: time };
+            return particle;
+        }
+
+        function createCheckeredTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            const size = 16;
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    ctx.fillStyle = (i + j) % 2 === 0 ? '#FFFFFF' : '#000000';
+                    ctx.fillRect(i * size, j * size, size, size);
+                }
+            }
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function updateMainTrails() {
+            mainTrails.left = mainTrails.left.filter(particle => {
+                const age = time - particle.userData.time;
+                if (age > 5) {
+                    scene.remove(particle);
+                    return false;
+                }
+                particle.material.opacity = 0.8 * (1 - age / 5);
+                return true;
+            });
+            mainTrails.right = mainTrails.right.filter(particle => {
+                const age = time - particle.userData.time;
+                if (age > 5) {
+                    scene.remove(particle);
+                    return false;
+                }
+                particle.material.opacity = 0.8 * (1 - age / 5);
+                return true;
+            });
+            npcTrails.forEach(npcTrail => {
+                npcTrail.left = npcTrail.left.filter(particle => {
+                    const age = time - particle.userData.time;
+                    if (age > 5) {
+                        scene.remove(particle);
+                        return false;
+                    }
+                    particle.material.opacity = 0.5 * (1 - age / 5);
+                    return true;
+                });
+                npcTrail.right = npcTrail.right.filter(particle => {
+                    const age = time - particle.userData.time;
+                    if (age > 5) {
+                        scene.remove(particle);
+                        return false;
+                    }
+                    particle.material.opacity = 0.5 * (1 - age / 5);
+                    return true;
+                });
+            });
+        }
+
+        function initMiniMap() {
+            miniMap = document.getElementById('miniMap');
+            miniMapCtx = miniMap.getContext('2d');
+            miniMap.width = 150;
+            miniMap.height = 150;
+        }
+
+        function initSideView() {
+            sideView = document.getElementById('sideView');
+            sideViewCtx = sideView.getContext('2d');
+            sideView.width = 150;
+            sideView.height = 150;
+        }
+
+        function updateMiniMap() {
+            if (!skier || !miniMapCtx || !skier.position) return;
+            miniMapCtx.clearRect(0, 0, miniMap.width, miniMap.height);
+            miniMapCtx.save();
+            miniMapCtx.scale(1, -1);
+            miniMapCtx.translate(0, -miniMap.height);
+            const mapWidth = 2000 / miniMapZoom;
+            const mapHeight = 100 / miniMapZoom;
+            const scaleX = miniMap.width / mapWidth;
+            const scaleY = miniMap.height / mapHeight;
+            const centerX = miniMap.width / 2;
+            const centerY = miniMap.height / 2;
+
+            // Ski trails
+            if (currentSpeed > 0) {
+                skiTrails.left.push({ x: skier.position.x, z: skier.position.z - 0.3, time: time });
+                skiTrails.right.push({ x: skier.position.x, z: skier.position.z + 0.3, time: time });
+            }
+            skiTrails.left = skiTrails.left.filter(point => time - point.time < 5);
+            skiTrails.right = skiTrails.right.filter(point => time - point.time < 5);
+
+            skiTrails.left.forEach(point => {
+                if (!point.x || !point.z) return;
+                const alpha = 1 - (time - point.time) / 5;
+                miniMapCtx.fillStyle = `rgba(128, 128, 128, ${alpha})`;
+                const x = centerX + (point.x - skier.position.x) * scaleX;
+                const z = centerY - (point.z - skier.position.z) * scaleY;
+                if (z > 0 && z < miniMap.height && x > 0 && x < miniMap.width) {
+                    miniMapCtx.beginPath();
+                    miniMapCtx.arc(x, z, 0.75 * miniMapZoom, 0, Math.PI * 2);
+                    miniMapCtx.fill();
+                }
             });
 
-            if (npc.gun && Math.random() < 0.01) {
-              npc.isFiring = true;
-              const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(npc.model.quaternion);
-              const projectile = new THREE.Mesh(
-                new THREE.SphereGeometry(0.1, 8, 8),
-                new THREE.MeshBasicMaterial({ color: npc.team === 'red' ? 0xff0000 : 0x0000ff })
-              );
-              projectile.position.copy(npc.model.position).addScaledVector(direction, 3.5).add(new THREE.Vector3(0, 3.5, 0));
-              projectile.userData = { velocity: direction.multiplyScalar(0.2), team: npc.team };
-              scene.add(projectile);
-              projectiles.push(projectile);
-              setTimeout(() => { npc.isFiring = false; }, 200);
+            skiTrails.right.forEach(point => {
+                if (!point.x || !point.z) return;
+                const alpha = 1 - (time - point.time) / 5;
+                miniMapCtx.fillStyle = `rgba(128, 128, 128, ${alpha})`;
+                const x = centerX + (point.x - skier.position.x) * scaleX;
+                const z = centerY - (point.z - skier.position.z) * scaleY;
+                if (z > 0 && z < miniMap.height && x > 0 && x < miniMap.width) {
+                    miniMapCtx.beginPath();
+                    miniMapCtx.arc(x, z, 0.75 * miniMapZoom, 0, Math.PI * 2);
+                    miniMapCtx.fill();
+                }
+            });
+
+            // Flags
+            flags.forEach(flag => {
+                if (!flag || !flag.material || !flag.position) return;
+                miniMapCtx.fillStyle = flag.material.color.getStyle();
+                const x = centerX + (flag.position.x - skier.position.x) * scaleX;
+                const z = centerY - (flag.position.z - skier.position.z) * scaleY;
+                if (z > 0 && z < miniMap.height && x > 0 && x < miniMap.width) {
+                    miniMapCtx.beginPath();
+                    miniMapCtx.arc(x, z, 0.75 * miniMapZoom, 0, Math.PI * 2);
+                    miniMapCtx.fill();
+                }
+            });
+
+            // Trees
+            trees.forEach(tree => {
+                if (!tree || !tree.position) return;
+                miniMapCtx.fillStyle = '#228B22';
+                const x = centerX + (tree.position.x - skier.position.x) * scaleX;
+                const z = centerY - (tree.position.z - skier.position.z) * scaleY;
+                if (z > 0 && z < miniMap.height && x > 0 && x < miniMap.width) {
+                    miniMapCtx.beginPath();
+                    miniMapCtx.arc(x, z, 1 * miniMapZoom, 0, Math.PI * 2);
+                    miniMapCtx.fill();
+                }
+            });
+
+            // NPCs
+            npcs.forEach(npc => {
+                if (!npc || !npc.position) return;
+                miniMapCtx.fillStyle = '#808080';
+                const x = centerX + (npc.position.x - skier.position.x) * scaleX;
+                const z = centerY - (npc.position.z - skier.position.z) * scaleY;
+                if (z > 0 && z < miniMap.height && x > 0 && x < miniMap.width) {
+                    miniMapCtx.fillRect(x - 1 * miniMapZoom, z - 1 * miniMapZoom, 2 * miniMapZoom, 2 * miniMapZoom);
+                }
+            });
+
+            // Collectables
+            collectables.forEach(collectable => {
+                if (!collectable || !collectable.material || !collectable.position) return;
+                miniMapCtx.fillStyle = collectable.material.color.getStyle();
+                const x = centerX + (collectable.position.x - skier.position.x) * scaleX;
+                const z = centerY - (collectable.position.z - skier.position.z) * scaleY;
+                if (z > 0 && z < miniMap.height && x > 0 && x < miniMap.width) {
+                    miniMapCtx.beginPath();
+                    miniMapCtx.arc(x, z, 1 * miniMapZoom, 0, Math.PI * 2);
+                    miniMapCtx.fill();
+                }
+            });
+
+            // Finish line
+            miniMapCtx.fillStyle = 'green';
+            const finishX = centerX + (-1850 - skier.position.x) * scaleX;
+            const finishZ = centerY - (0 - skier.position.z) * scaleY;
+            if (finishX > 0 && finishX < miniMap.width) {
+                miniMapCtx.fillRect(finishX - 0.5, finishZ - 12.5 * scaleY, 1, 25 * scaleY);
             }
 
-            if (npc.hasShield) {
-              npc.shieldPulseTime += delta;
-              const intensity = 0.2 + 0.1 * Math.sin(npc.shieldPulseTime);
-              npc.model.traverse((child) => {
-                if (child.isMesh) {
-                  child.material.emissiveIntensity = intensity;
-                }
-              });
-            }
-
-            npc.mixer.update(delta);
-          }
-        });
-      });
-
-      collectibles.forEach((collectible) => {
-        if (collectible.userData.type === 'Energy' || collectible.userData.type === 'Shield') {
-          collectible.userData.throbTime += delta;
-          const scale = (collectible.userData.type === 'Energy' ? 4 : 2) + 0.2 * Math.sin(collectible.userData.throbTime * 3);
-          collectible.scale.set(scale, scale, scale);
-          collectible.rotation.y += delta;
-        }
-      });
-
-      const projectilesToRemove = [];
-      const playersToRemove = [];
-
-      projectiles.forEach((projectile, pIndex) => {
-        if (!projectile.position) return;
-        projectile.position.add(projectile.userData.velocity);
-        if (projectile.position.length() > 50) {
-          projectilesToRemove.push(pIndex);
-          return;
+            // Skier position
+            miniMapCtx.fillStyle = `rgba(255, 255, 0, ${0.5 + 0.5 * Math.sin(time * (0.5 + 5 * currentSpeed / 50))})`;
+            miniMapCtx.beginPath();
+            miniMapCtx.arc(centerX, centerY, 2 * miniMapZoom, 0, Math.PI * 2);
+            miniMapCtx.fill();
+            miniMapCtx.restore();
         }
 
-        const projectileBox = new THREE.Box3().setFromObject(projectile);
-        const targetTeam = projectile.userData.team === 'red' ? blueTeam : redTeam;
-
-        targetTeam.forEach((npc, nIndex) => {
-          if (!npc.model.position) return;
-          const distance = projectile.position.distanceTo(npc.model.position);
-          const boxIntersect = projectileBox.intersectsBox(npc.boundingBox);
-          if (distance < 5.25 || boxIntersect) {
-            if (npc.hasShield) {
-              npc.hasShield = false;
-              npc.model.traverse((child) => {
-                if (child.isMesh && npc.originalMaterials.length > 0) {
-                  const index = npc.model.children.indexOf(child);
-                  child.material.emissive.setHex(0x000000);
-                  child.material.emissiveIntensity = 0;
-                }
-              });
-              showFlashMessage(`${npc.team === 'blue' ? 'Blue' : 'Red'} Shield Broken!`);
-            } else {
-              createBloodEffect(npc.model.position);
-              npc.energy -= 25;
-              updateEnergyProgressBar(npc);
-              if (npc.energy <= 0) {
-                createExplosion(npc.model.position, npc.team);
-                if (npc.carriedFlag) {
-                  npc.carriedFlag.userData.isCaptured = false;
-                  npc.carriedFlag.userData.carrier = null;
-                  npc.carriedFlag.position.copy(npc.carriedFlag.userData.team === 'red' ? new THREE.Vector3(-20, 1.5, 0) : new THREE.Vector3(20, 1.5, 0));
-                  npc.carriedFlag.scale.set(1, 1, 1);
-                  scene.add(npc.carriedFlag);
-                  npc.model.remove(npc.carriedFlag);
-                  npc.carriedFlag = null;
-                  showFlashMessage(`${npc.team === 'blue' ? 'Blue' : 'Red'} Team Dropped Flag!`);
-                }
-                if (npc.model === player) {
-                  showFlashMessage('Blue Player Killed!', 5000);
-                  isPlayerAlive = false;
-                  fireButton.style.display = 'none';
-                  autoFireButton.style.display = 'none';
-                  isAutoFire = false;
-                  showGameOver();
+        function updateSideView() {
+            if (!skier || !terrain || !sideViewCtx) return;
+            sideViewCtx.clearRect(0, 0, sideView.width, sideView.height);
+            sideViewCtx.save();
+            sideViewCtx.scale(-1, 1);
+            sideViewCtx.translate(-sideView.width, 0);
+            const segments = 100;
+            const mapWidth = 2000;
+            const scaleX = sideView.width / mapWidth;
+            const maxTerrainHeight = 30;
+            const minTerrainHeight = -40;
+            const heightRange = maxTerrainHeight - minTerrainHeight;
+            const scaleY = sideView.height / heightRange;
+            sideViewCtx.beginPath();
+            sideViewCtx.strokeStyle = '#FFFFFF';
+            sideViewCtx.lineWidth = 2;
+            for (let i = 0; i <= segments; i++) {
+                const x = -(i / segments) * mapWidth;
+                const terrainHeight = terrain.geometry.attributes.position.array[i * (segments + 1) * 3 + 2] || 0;
+                const canvasX = (mapWidth + x) * scaleX;
+                const y = sideView.height - (terrainHeight - minTerrainHeight) * scaleY;
+                if (i === 0) {
+                    sideViewCtx.moveTo(canvasX, y);
                 } else {
-                  showFlashMessage(`${npc.team === 'blue' ? 'Blue' : 'Red'} Player Killed!`);
+                    sideViewCtx.lineTo(canvasX, y);
                 }
-                playersToRemove.push({ team: targetTeam, index: nIndex });
-              }
             }
-            projectilesToRemove.push(pIndex);
-            if (npc.energy <= 0) {
-              if (projectile.userData.team === 'blue') blueTeamKills++;
-              else redTeamKills++;
-            }
-          }
-        });
-      });
-
-      projectilesToRemove.sort((a, b) => b - a).forEach((pIndex) => {
-        scene.remove(projectiles[pIndex]);
-        projectiles.splice(pIndex, 1);
-      });
-
-      playersToRemove.forEach(({ team, index }) => {
-        const npc = team[index];
-        scene.remove(npc.model);
-        if (npc.gun) scene.remove(npc.gun);
-        if (npc.energyBar) scene.remove(npc.energyBar.sprite);
-        team.splice(index, 1);
-      });
-
-      particles.forEach((particle, index) => {
-        if (!particle.position) return;
-        particle.position.add(particle.userData.velocity);
-        particle.userData.lifetime -= delta;
-        if (particle.userData.lifetime <= 0) {
-          scene.remove(particle);
-          particles.splice(index, 1);
+            sideViewCtx.stroke();
+            sideViewCtx.fillStyle = 'yellow';
+            const playerX = (mapWidth + skier.position.x) * scaleX;
+            const playerY = sideView.height - (skier.position.y - minTerrainHeight) * scaleY;
+            sideViewCtx.beginPath();
+            sideViewCtx.arc(playerX, playerY, 3, 0, Math.PI * 2);
+            sideViewCtx.fill();
+            sideViewCtx.strokeStyle = 'green';
+            sideViewCtx.lineWidth = 2;
+            sideViewCtx.beginPath();
+            const finishX = (mapWidth - 1850) * scaleX;
+            const finishHeight = terrain.geometry.attributes.position.array[Math.floor((-1850 / -2000) * segments) * (100 + 1) * 3 + 2] || 0;
+            const finishY = sideView.height - (finishHeight - minTerrainHeight) * scaleY;
+            sideViewCtx.moveTo(finishX, sideView.height);
+            sideViewCtx.lineTo(finishX, finishY - 10);
+            sideViewCtx.stroke();
+            sideViewCtx.restore();
         }
-      });
 
-      energyBars.forEach((playerData) => {
-        if (playerData.model && playerData.energy > 0) updateEnergyProgressBar(playerData);
-      });
+        function showMiniScore(text, x, z, isPenalty) {
+            const div = document.createElement('div');
+            div.className = 'mini-score' + (isPenalty ? ' penalty' : '');
+            div.textContent = text;
+            document.body.appendChild(div);
+            const updatePosition = () => {
+                const vector = new THREE.Vector3(x, 2, z);
+                vector.project(camera);
+                const canvasWidth = window.innerWidth;
+                const canvasHeight = window.innerHeight;
+                const posX = (vector.x * 0.5 + 0.5) * canvasWidth;
+                const posY = (-vector.y * 0.5 + 0.5) * canvasHeight;
+                div.style.left = `${posX}px`;
+                div.style.top = `${posY}px`;
+            };
+            updatePosition();
+            setTimeout(() => {
+                div.classList.add('fade');
+                setTimeout(() => document.body.removeChild(div), 1000);
+            }, 100);
+        }
 
-      drawMinimap();
-      updateStats();
+        function showCorrectMessage(isBlue) {
+            const correctEl = document.getElementById('correct');
+            correctEl.textContent = 'Correct!';
+            correctEl.className = 'left';
+            if (!isBlue) correctEl.classList.add('right');
+            correctEl.style.display = 'block';
+            setTimeout(() => correctEl.style.display = 'none', 1000);
+        }
 
-      renderer.render(scene, activeCamera);
-    }
-    animate();
+        function showFinishMessage(distance) {
+            const finishEl = document.getElementById('finishMessage');
+            finishEl.textContent = `Finish Line: ${distance.toFixed(0)}m`;
+            finishEl.style.display = 'block';
+        }
 
-    window.addEventListener('resize', () => {
-      mainCamera.aspect = window.innerWidth / window.innerHeight;
-      playerCamera.aspect = window.innerWidth / window.innerHeight;
-      mainCamera.updateProjectionMatrix();
-      playerCamera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-  </script>
+        function hideFinishMessage() {
+            document.getElementById('finishMessage').style.display = 'none';
+        }
+
+        function showNPCHitMessage() {
+            const npcHitEl = document.getElementById('npcHit');
+            npcHitEl.textContent = 'NPC Hit! +50';
+            npcHitEl.style.display = 'block';
+            setTimeout(() => npcHitEl.style.display = 'none', 1000);
+        }
+
+        function updateProgressBar() {
+            if (!skier) return;
+            const totalDistance = 1850;
+            const currentDistance = Math.max(0, -skier.position.x);
+            const progress = (currentDistance / totalDistance) * 100;
+            document.getElementById('progressFill').style.height = `${progress}%`;
+        }
+
+        function isNPCTargetable(npc) {
+            if (!npc.userData || npc.userData.knockedOver) return false;
+            const dist = skier.position.distanceTo(npc.position);
+            if (dist > 25 || npc.position.x > skier.position.x) return false; // NPC too far or ahead
+            const direction = npc.position.clone().sub(skier.position).normalize();
+            const forward = new THREE.Vector3(-1, 0, 0); 
+            const angle = direction.angleTo(forward);
+            if (angle > Math.PI / 6) return false;
+            const raycaster = new THREE.Raycaster(skier.position, direction, 0, dist);
+            const intersects = raycaster.intersectObjects([terrain, ...trees, ...flags, ...collectables, finishLine, ...flagpoles], true);
+            if (intersects.length > 0 && intersects[0].distance < dist) return false;
+            return true;
+        }
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.Fog(0x87CEEB, 20, 150);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.set(10, 5, 0);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+            const joystickEl = document.getElementById('joystick');
+            joystickEl.addEventListener('pointerdown', startJoystick);
+            joystickEl.addEventListener('pointermove', updateJoystick);
+            joystickEl.addEventListener('pointerup', resetJoystick);
+            joystickEl.addEventListener('pointercancel', resetJoystick);
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            initMiniMap();
+            initSideView();
+            document.getElementById('welcome').style.display = 'block';
+            animate();
+        }
+
+        function setupGame() {
+            terrain = createTerrain();
+            scene.add(terrain);
+            skier = createSkier();
+            skier.position.set(0, 0, 0);
+            scene.add(skier);
+            flags = [];
+            for (let i = 0; i < 40; i++) { // 40 flags
+                const flagGeometry = new THREE.CylinderGeometry(0.1, 0.1, 3, 32);
+                const flagMaterial = new THREE.MeshStandardMaterial({ color: i % 2 === 0 ? 0x0000FF : 0xFF0000 });
+                const flag = new THREE.Mesh(flagGeometry, flagMaterial);
+                const x = -50 - i * 40;
+                const z = (Math.random() - 0.5) * 20;
+                const terrainHeight = getTerrainHeight(x);
+                flag.position.set(x, terrainHeight + 1.5, z);
+                flags.push(flag);
+                scene.add(flag);
+            }
+            trees = [];
+            for (let i = 0; i < 100; i++) {
+                const x = -Math.random() * 1900;
+                const z = (Math.random() - 0.5) * 80;
+                if (Math.abs(z) > 15 && Math.abs(x + 1850) > 50) {
+                    const tree = createTree(x, z);
+                    trees.push(tree);
+                    scene.add(tree);
+                }
+            }
+            npcs = [];
+            npcTrails = [];
+            for (let i = 0; i < 40; i++) {
+                const x = -Math.random() * 1800;
+                const z = (Math.random() - 0.5) * 30;
+                const npc = createNPC(x, z, i);
+                npcs.push(npc);
+                npcTrails.push({ left: [], right: [] });
+                scene.add(npc);
+            }
+            collectables = [];
+            for (let i = 0; i < 40; i++) {
+                const x = -50 - i * 50;
+                const z = (Math.random() - 0.5) * 20;
+                const type = i < 10 ? 'speed' : i < 20 ? 'life' : 'snowball';
+                const collectable = createCollectable(type, x, z);
+                collectables.push(collectable);
+                scene.add(collectable);
+            }
+            for (let i = 0; i < 20; i++) {
+                const x = -50 - i * 100;
+                const z = (Math.random() - 0.5) * 20;
+                const collectable = createCollectable('snowball', x, z);
+                collectables.push(collectable);
+                scene.add(collectable);
+            }
+            const finishHeight = getTerrainHeight(-1850);
+            const finishGeometry = new THREE.BoxGeometry(2, 0.2, 50);
+            const finishMaterial = new THREE.MeshStandardMaterial({ color: 0x00FF00 });
+            finishLine = new THREE.Mesh(finishGeometry, finishMaterial);
+            finishLine.position.set(-1850, finishHeight + 0.1, 0);
+            finishLine.rotation.y = Math.PI;
+            scene.add(finishLine);
+            const floorGeometry = new THREE.PlaneGeometry(10, 50);
+            const floorMaterial = new THREE.MeshStandardMaterial({ map: createCheckeredTexture(), roughness: 0.5 });
+            const finishFloor = new THREE.Mesh(floorGeometry, floorMaterial);
+            finishFloor.position.set(-1855, finishHeight + 0.1, 0);
+            finishFloor.rotation.x = -Math.PI / 2; // Rotate the floor to be horizontal
+            //finishFloor.rotation.y = Math.PI;
+            scene.add(finishFloor);
+            flagpoles = [];
+            const poleGeometry = new THREE.CylinderGeometry(0.1, 0.1, 4, 16);
+            const poleMaterial = new THREE.MeshStandardMaterial({ color: 0x666666 });
+            const leftPole = new THREE.Mesh(poleGeometry, poleMaterial);
+            leftPole.position.set(-1850, finishHeight + 2, -25);
+            scene.add(leftPole);
+            flagpoles.push(leftPole);
+            const rightPole = new THREE.Mesh(poleGeometry, poleMaterial);
+            rightPole.position.set(-1850, finishHeight + 2, 25);
+            scene.add(rightPole);
+            flagpoles.push(rightPole);
+            const flagGeometry = new THREE.PlaneGeometry(2, 1.5);
+            const flagMaterial = new THREE.MeshStandardMaterial({ map: createCheckeredTexture(), side: THREE.DoubleSide });
+            const leftFlag = new THREE.Mesh(flagGeometry, flagMaterial);
+            leftFlag.position.set(-1850, finishHeight + 3, -24.5);
+            leftFlag.rotation.y = 0;
+            scene.add(leftFlag);
+            const rightFlag = new THREE.Mesh(flagGeometry, flagMaterial);
+            rightFlag.position.set(-1850, finishHeight + 3, 24.5);
+            rightFlag.rotation.y = Math.PI;
+            scene.add(rightFlag);
+            const ambientLight = new THREE.AmbientLight(0x606060);
+            //ambientLight.castShadow = true;
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 0.7);
+            directionalLight.position.set(10, 20, 10);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+            skiTrails = { left: [], right: [] };
+            mainTrails = { left: [], right: [] };
+            score = 0;
+            snowballAmmo = 20;
+            snowballsUsed = 0;
+            npcsHit = 0;
+            throwTimer = 0;
+            skidTimer = 0;
+        }
+
+        function startGame() {
+            document.getElementById('welcome').style.display = 'none';
+            document.getElementById('stats').style.display = 'block';
+            document.getElementById('joystick').style.display = 'block';
+            document.getElementById('toggleCamera').style.display = 'block';
+            document.getElementById('miniMap').style.display = 'block';
+            document.getElementById('sideView').style.display = 'block';
+            document.getElementById('progressBar').style.display = 'block';
+            setupGame();
+        }
+
+        function startJoystick(e) {
+            if (!autoPlay) {
+                joystick.active = true;
+                updateJoystick(e);
+            }
+        }
+
+        function updateJoystick(e) {
+            if (!joystick.active || autoPlay) return;
+            const rect = document.getElementById('joystick').getBoundingClientRect();
+            const x = e.clientX - rect.left - 50;
+            const y = e.clientY - rect.top - 50;
+            const dist = Math.sqrt(x * x + y * y);
+            const maxDist = 25;
+            if (dist > maxDist) {
+                const scale = maxDist / dist;
+                joystick.x = -x * scale;
+                joystick.y = y * scale;
+            } else {
+                joystick.x = -x;
+                joystick.y = y;
+            }
+            document.getElementById('knob').style.transform = `translate(${joystick.x}px, ${joystick.y}px)`;
+            joystick.x /= 25;
+            joystick.y /= 25;
+        }
+
+        function resetJoystick() {
+            if (!autoPlay) {
+                joystick.active = false;
+                joystick.x = 0;
+                joystick.y = 0;
+                document.getElementById('knob').style.transform = 'translate(0px, 0px)';
+            }
+        }
+
+        function toggleCamera() {
+            if (cameraMode === 'default') {
+                cameraMode = 'flyAround';
+                document.getElementById('toggleCamera').textContent = 'Camera: Fly-Around';
+            } else {
+                cameraMode = 'default';
+                document.getElementById('toggleCamera').textContent = 'Camera: Default';
+            }
+        }
+
+        function animateSkier(delta) {
+            let tiltAngle = joystick.x * Math.PI / 6;
+            let fallAngle = 0;
+            if (stumbleTimer > 0) {
+                stumbleTimer -= delta;
+                if (stumbleTimer > 0.5) {
+                    fallAngle = Math.min((1 - stumbleTimer) * Math.PI / 2, Math.PI / 3);
+                    tiltAngle += Math.sin(stumbleTimer * 15) * Math.PI / 6;
+                } else {
+                    fallAngle = (stumbleTimer / 0.5) * Math.PI / 3;
+                    tiltAngle += Math.sin(stumbleTimer * 10) * Math.PI / 8;
+                }
+                if (stumbleTimer <= 0) {
+                    stumbleTimer = 0;
+                }
+            }
+            if (skidTimer > 0) {
+                skidTimer -= delta;
+                const progress = skidTimer / 4;
+                skier.rotation.y = Math.PI / 2 * (1 - progress) + Math.PI / 2;
+                currentSpeed = currentSpeed * progress;
+                skier.position.x -= currentSpeed * delta;
+                if (skier.position.x < -1860) skier.position.x = -1860;
+                if (time % 0.3 < delta) {
+                    const leftParticle = createTrailParticle(skier.position.x, skier.position.z - 0.3, time);
+                    const rightParticle = createTrailParticle(skier.position.x, skier.position.z + 0.3, time);
+                    mainTrails.left.push(leftParticle);
+                    mainTrails.right.push(rightParticle);
+                    scene.add(leftParticle, rightParticle);
+                }
+                if (skidTimer <= 0) {
+                    skidTimer = 0;
+                    completeLevel();
+                }
+            }
+            if (throwTimer > 0) {
+                throwTimer -= delta;
+                if (throwTimer < 0) throwTimer = 0;
+            }
+            const leanFactor = Math.abs(joystick.x) * 0.3;
+            const leanAngle = joystick.x * Math.PI / 6;
+            skierParts.torso.rotation.z = tiltAngle + leanAngle;
+            skierParts.torso.rotation.x = fallAngle;
+            skierParts.helmet.rotation.z = tiltAngle + leanAngle;
+            skierParts.helmet.rotation.x = fallAngle;
+            skierParts.goggles.rotation.z = tiltAngle + leanAngle;
+            skierParts.goggles.rotation.x = fallAngle;
+            skierParts.leftArm.rotation.z = Math.PI / 4 + (joystick.x > 0 ? leanFactor : -leanFactor);
+            const throwProgress = throwTimer > 0 ? (0.5 - throwTimer) / 0.5 : 0;
+            const throwAngle = throwProgress < 0.5 ? Math.PI / 4 * (throwProgress * 2) : Math.PI / 4 * (1 - (throwProgress - 0.5) * 2);
+            skierParts.rightArm.rotation.z = -Math.PI / 4 + (joystick.x > 0 ? -leanFactor : leanFactor) + throwAngle;
+            skierParts.leftPole.rotation.set(0, 0, 0);
+            skierParts.rightPole.rotation.set(0, 0, 0);
+            const crouchFactor = Math.min(currentSpeed / 40, 1);
+            const scaleY = 1 - crouchFactor * 0.2;
+            skierParts.torso.position.y = 1.5 * scaleY;
+            skierParts.torso.scale.y = scaleY;
+            skierParts.helmet.position.y = (2.2 * scaleY) - (crouchFactor * 0.3);
+            skierParts.goggles.position.y = (2.1 * scaleY) - (crouchFactor * 0.3);
+            skierParts.leftArm.position.y = 1.5 * scaleY;
+            skierParts.rightArm.position.y = 1.5 * scaleY;
+            skierParts.leftPole.position.y = 1.1 * scaleY;
+            skierParts.rightPole.position.y = 1.1 * scaleY;
+            skierParts.leftLeg.position.y = 0.5 * scaleY;
+            skierParts.rightLeg.position.y = 0.5 * scaleY;
+            skierParts.leftSki.position.y = 0.025;
+            skierParts.rightSki.position.y = 0.025;
+            const skiAngle = joystick.x * Math.PI / 6;
+            skierParts.leftSki.rotation.y = skiAngle + Math.PI;
+            skierParts.rightSki.rotation.y = skiAngle + Math.PI;
+        }
+
+        function knockOverFlag(flag) {
+            flag.rotation.x = Math.PI / 2;
+            const terrainHeight = getTerrainHeight(flag.position.x);
+            flag.position.y = terrainHeight + 0.1;
+        }
+
+        function knockOverNPC(npc) {
+            npc.rotation.x = Math.PI / 2;
+            npc.position.y -= 1.4;
+            npc.userData.knockedOver = true;
+            npc.userData.knockOverTimer = 3;
+            npc.userData.spinAngle = 0;
+            score += 50;
+            npcsHit++;
+            showNPCHitMessage();
+            showMiniScore('+50', npc.position.x, npc.position.z, false);
+        }
+
+        function showFlagHit() {
+            const flagHitEl = document.getElementById('flagHit');
+            flagHitEl.textContent = 'Flag Hit!';
+            flagHitEl.style.display = 'block';
+            setTimeout(() => flagHitEl.style.display = 'none', 1000);
+            screenShake.active = true;
+            screenShake.timer = 0.5;
+        }
+
+        function showNPCHit() {
+            screenShake.active = true;
+            screenShake.timer = 0.5;
+        }
+
+        function showPenalty() {
+            const penaltyEl = document.getElementById('penalty');
+            penaltyEl.textContent = '-50';
+            penaltyEl.style.display = 'block';
+            setTimeout(() => penaltyEl.style.display = 'none', 1000);
+        }
+
+        function updateScreenShake(delta) {
+            if (screenShake.active) {
+                screenShake.timer -= delta;
+                if (screenShake.timer <= 0) {
+                    screenShake.active = false;
+                    if (cameraMode === 'default' && skidTimer <= 0) {
+                        const isSteep = skier.position.x > -300 && skier.position.x < -250 ||
+                                        skier.position.x > -500 && skier.position.x < -450 ||
+                                        skier.position.x > -700 && skier.position.x < -650;
+                        if (isSteep) {
+                            camera.position.set(skier.position.x + 10, skier.position.y + 10, skier.position.z);
+                            camera.lookAt(skier.position.x - 5, skier.position.y, skier.position.z);
+                        } else {
+                            camera.position.set(skier.position.x + 10, skier.position.y + 5, skier.position.z);
+                            camera.lookAt(skier.position);
+                        }
+                    }
+                } else {
+                    const shakeX = (Math.random() - 0.5) * screenShake.intensity;
+                    const shakeY = (Math.random() - 0.5) * screenShake.intensity;
+                    camera.position.set(skier.position.x + 10 + shakeX, skier.position.y + 5 + shakeY, skier.position.z);
+                }
+            }
+        }
+
+        function updateCamera(delta) {
+            if (!skier) return;
+            if (skidTimer > 0) {
+                flyAroundAngle += delta * (2 * Math.PI / 4);
+                const radius = 15;
+                camera.position.set(
+                    skier.position.x + Math.cos(flyAroundAngle) * radius,
+                    skier.position.y + 5,
+                    skier.position.z + Math.sin(flyAroundAngle) * radius
+                );
+                camera.lookAt(skier.position);
+                
+            } else if (cameraMode === 'default' && !screenShake.active) {
+                //const isSteep = skier.position.x > -300 && skier.position.x < -250 ||
+                //                skier.position.x > -500 && skier.position.x < -450 ||
+                //                skier.position.x > -700 && skier.position.x < -650;
+                //if (isSteep) {
+                //    camera.position.set(skier.position.x + 10, skier.position.y + 10, skier.position.z);
+                //    camera.lookAt(skier.position.x - 5, skier.position.y, skier.position.z);
+                //} else {
+                    camera.position.set(skier.position.x + 10, skier.position.y + 5, skier.position.z );
+                    camera.lookAt(skier.position);
+                //}
+            } else if (cameraMode === 'flyAround') {
+                flyAroundAngle += delta * 0.75; // Adjust the speed of the fly-around effect
+                const radius = 25;
+                camera.position.set(
+                    skier.position.x + Math.cos(flyAroundAngle) * radius,
+                    skier.position.y + 5,
+                    skier.position.z + Math.sin(flyAroundAngle) * radius
+                );
+                camera.lookAt(skier.position);
+            }
+        }
+
+        function updateNPCs(delta) {
+            npcs.forEach((npc, index) => {
+                if (!npc.userData) return;
+                if (npc.userData.knockedOver) {
+                    npc.userData.knockOverTimer -= delta;
+                    if (npc.userData.knockOverTimer > 2) {
+                        npc.userData.spinAngle += delta * 2 * Math.PI;
+                        npc.rotation.y = npc.userData.spinAngle + Math.PI / 2;
+                    }
+                    if (npc.userData.knockOverTimer <= 0) {
+                        npc.userData.knockedOver = false;
+                        npc.rotation.x = 0;
+                        npc.rotation.y = Math.PI / 2;
+                        const terrainHeight = getTerrainHeight(npc.position.x);
+                        npc.position.y = terrainHeight + 0.5;
+                    }
+                } else {
+                    npc.position.x -= npc.userData.speed * delta;
+                    const lateralMove = Math.sin(time * 0.5 + npc.userData.lateralOffset) * 10;
+                    npc.position.z = Math.max(-30, Math.min(30, lateralMove));
+                    const terrainHeight = getTerrainHeight(npc.position.x);
+                    npc.position.y = terrainHeight + 0.5;
+                    if (npc.position.x < -1900) {
+                        npc.position.x = 0;
+                        npc.position.z = (Math.random() - 0.5) * 30;
+                        npc.userData.trails.left.forEach(particle => scene.remove(particle));
+                        npc.userData.trails.right.forEach(particle => scene.remove(particle));
+                        npc.userData.trails.left = [];
+                        npc.userData.trails.right = [];
+                    }
+                    if (time % 0.1 < delta) {
+                        const leftParticle = createTrailParticle(npc.position.x, npc.position.z - 0.3, time, true);
+                        const rightParticle = createTrailParticle(npc.position.x, npc.position.z + 0.3, time, true);
+                        npc.userData.trails.left.push(leftParticle);
+                        npc.userData.trails.right.push(rightParticle);
+                        scene.add(leftParticle, rightParticle);
+                    }
+                }
+            });
+        }
+
+        function updateCollectables(delta) {
+            collectables.forEach((collectable, index) => {
+                if (!collectable.userData) return;
+                const dist = skier.position.distanceTo(collectable.position);
+                if (dist < 3) {
+                    if (collectable.userData.type === 'speed') {
+                        speedBoostTimer = 5;
+                        showBonus('Speed Up!');
+                    } else if (collectable.userData.type === 'life') {
+                        lives++;
+                        showBonus('+1 Life');
+                    } else if (collectable.userData.type === 'snowball') {
+                        snowballAmmo += 5;
+                        showBonus('+5 Snowballs');
+                    }
+                    scene.remove(collectable);
+                    collectables.splice(index, 1);
+                } else {
+                    collectable.userData.pulseTime += delta * 5;
+                    const scale = collectable.userData.baseScale * (1 + 0.5 * Math.sin(collectable.userData.pulseTime));
+                    collectable.scale.set(scale, scale, scale);
+                    const terrainHeight = getTerrainHeight(collectable.position.x);
+                    collectable.position.y = terrainHeight + 1.5 * scale;
+                }
+            });
+        }
+
+        function updateSnowballs(delta) {
+            snowballs.forEach((snowball, index) => {
+                if (!snowball.userData || !snowball.userData.target) {
+                    snowball.userData.trail.forEach(particle => scene.remove(particle));
+                    scene.remove(snowball);
+                    snowballs.splice(index, 1);
+                    return;
+                }
+                snowball.position.add(snowball.userData.velocity.clone().multiplyScalar(delta));
+                if (time - snowball.userData.lastTrailTime > 0.05) {
+                    const trailParticle = createSnowballTrailParticle(snowball.position.x, snowball.position.y, snowball.position.z, time);
+                    snowball.userData.trail.push(trailParticle);
+                    scene.add(trailParticle);
+                    snowball.userData.lastTrailTime = time;
+                }
+                snowball.userData.trail = snowball.userData.trail.filter(particle => {
+                    const age = time - particle.userData.time;
+                    if (age > 0.5) {
+                        scene.remove(particle);
+                        return false;
+                    }
+                    particle.material.opacity = 0.6 * (1 - age / 0.5);
+                    return true;
+                });
+                const target = snowball.userData.target;
+                if (!target.userData.knockedOver && snowball.position.distanceTo(target.position) < 1) {
+                    knockOverNPC(target);
+                    snowball.userData.trail.forEach(particle => scene.remove(particle));
+                    scene.remove(snowball);
+                    snowballs.splice(index, 1);
+                    return;
+                }
+                if (snowball.position.x < -1900 || Math.abs(snowball.position.z) > 50 || time - snowball.userData.startTime > 2) {
+                    snowball.userData.trail.forEach(particle => scene.remove(particle));
+                    scene.remove(snowball);
+                    snowballs.splice(index, 1);
+                }
+            });
+        }
+
+        function animate() {
+            if (gameOver) return;
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            time += delta;
+            snowballCooldown = Math.max(0, snowballCooldown - delta);
+
+            try {
+                if (autoPlay && skier && skidTimer <= 0) {
+                    let targetZ = 0;
+                    let targetSpeed = -0.5;
+
+                    const nextFlag = flags.find(f => f.position.x > skier.position.x && Math.abs(f.position.x - skier.position.x) < 50);
+                    const nearestCollectable = collectables.reduce((nearest, c) => {
+                        const dist = skier.position.distanceTo(c.position);
+                        return dist < 20 && c.position.x > skier.position.x && (!nearest || dist < nearest.dist) ? { obj: c, dist } : nearest;
+                    }, null);
+                    if (nextFlag) {
+                        const isBlue = nextFlag.material.color.getHex() === 0x0000FF;
+                        targetZ = nextFlag.position.z + (isBlue ? 2 : -2);
+                    } else if (nearestCollectable) {
+                        targetZ = nearestCollectable.obj.position.z;
+                        targetSpeed = -0.7;
+                    }
+                    const dz = targetZ - skier.position.z;
+                    joystick.x = Math.min(Math.max(dz * 0.05, -1), 1);
+                    joystick.y = targetSpeed;
+
+                    document.getElementById('knob').style.transform = `translate(${joystick.x * 25}px, ${joystick.y * 25}px)`;
+                }
+
+                if (skier) {
+                    let travelPoints = Math.round(currentSpeed / 10);
+                    score += travelPoints
+
+                    if (autoThrow && snowballAmmo > 0 && snowballCooldown <= 0) {
+                        let target = null;
+                        let minDist = Infinity;
+                        npcs.forEach(npc => {
+                            if (isNPCTargetable(npc)) {
+                                const dist = skier.position.distanceTo(npc.position);
+                                if (dist < minDist) {
+                                    minDist = dist;
+                                    target = npc;
+                                }
+                            }
+                        });
+                        if (target) {
+                            snowballAmmo--;
+                            snowballsUsed++;
+                            throwTimer = 0.5; // throw animation duration
+                            const snowball = createSnowball(target);
+                            snowballs.push(snowball);
+                            scene.add(snowball);
+                            snowballCooldown = 0.2; // cooldown for next snowball
+                        }
+                    }
+                    if (skidTimer <= 0) {
+                        const baseSpeed = 20;
+                        currentSpeed = baseSpeed - joystick.y * 20 + (speedBoostTimer > 0 ? 10 : 0);
+                        currentSpeed = Math.max(0, Math.min(50, currentSpeed));
+                        speedBoostTimer = Math.max(0, speedBoostTimer - delta);
+                        skier.position.z += joystick.x * 15 * delta;
+                        skier.position.x -= currentSpeed * delta;
+                        skier.position.z = Math.max(-15, Math.min(15, skier.position.z));
+                    }
+                    const terrainHeight = getTerrainHeight(skier.position.x);
+                    skier.position.y = terrainHeight + 0.5;
+                    if (currentSpeed > 0 && time % 0.1 < delta && skidTimer <= 0) {
+                        const leftParticle = createTrailParticle(skier.position.x, skier.position.z - 0.3, time);
+                        const rightParticle = createTrailParticle(skier.position.x, skier.position.z + 0.3, time);
+                        mainTrails.left.push(leftParticle);
+                        mainTrails.right.push(rightParticle);
+                        scene.add(leftParticle, rightParticle);
+                    }
+                    updateMainTrails();
+                    animateSkier(delta);
+                    updateNPCs(delta);
+                    updateCollectables(delta);
+                    updateSnowballs(delta);
+                    updateScreenShake(delta);
+                    updateCamera(delta);
+                    flags.forEach((flag, index) => {
+                        if (!flag) return;
+                        const dist = skier.position.distanceTo(flag.position);
+                        if (dist < 1) {
+                            lives--;
+                            knockOverFlag(flag);
+                            showFlagHit();
+                            stumbleTimer = 1.0;
+                            flags.splice(index, 1);
+                            setTimeout(() => scene.remove(flag), 1000);
+                            if (lives <= 0) endGame();
+                        } else if (dist < 2 && flag.position.x > skier.position.x) {
+                            const isBlue = flag.material.color.getHex() === 0x0000FF;
+                            const isCorrectSide = isBlue ? skier.position.z > flag.position.z : skier.position.z < flag.position.z;
+                            if (isCorrectSide) {
+                                score += 100;
+                                showBonus('+100');
+                                showMiniScore('+100', flag.position.x, flag.position.z, false);
+                                showCorrectMessage(isBlue);
+                            } else {
+                                score = Math.max(0, score - 50);
+                                showPenalty();
+                                showMiniScore('-50', flag.position.x, flag.position.z, true);
+                            }
+                            flags.splice(index, 1);
+                            scene.remove(flag);
+                        }
+                    });
+                    npcs.forEach(npc => {
+                        if (!npc.position) return;
+                        const dist = skier.position.distanceTo(npc.position);
+                        if (dist < 1 && !npc.userData.knockedOver) {
+                            knockOverNPC(npc);
+                            showNPCHit();
+                            stumbleTimer = 1.0;
+                        }
+                    });
+                    const finishDistance = Math.abs(skier.position.x - (-1850));
+                    if (finishDistance <= 200 && skidTimer <= 0) {
+                        showFinishMessage(finishDistance);
+                    } else {
+                        hideFinishMessage();
+                    }
+                    if (skier.position.x < -1850 && skidTimer <= 0) {
+                        skidTimer = 4;
+                        joystick.x = 0;
+                        joystick.y = 0;
+                        document.getElementById('knob').style.transform = 'translate(0px, 0px)';
+                    }
+                    const finishHeight = getTerrainHeight(-1850);
+                    const altitude = terrainHeight - finishHeight;
+                    document.getElementById('stats').innerHTML = `
+                        <span style="color: yellow; font-size: 32px;">Score: ${score}</span><br>
+                        <span style="color: orange; font-size: 32px;">Time: ${time.toFixed(1)}s</span><br>
+                        <span >Speed: ${currentSpeed.toFixed(1)} m/s</span><br>
+                        <span >Lives: ${lives}</span><br>
+                        <span >Snowballs: ${snowballAmmo}</span><br>
+                        <span >Altitude: ${altitude.toFixed(1)} m</span><br>
+                        <span >Snowballs Used: ${snowballsUsed}</span><br>
+                        <span >Skiers Hit: ${npcsHit}</span><br>
+                        <span >Level: ${level}</span><br>
+                        <span ">Camera: ${cameraMode}</span><br>
+                        <span style="color: white;">Auto Play: ${autoPlay ? 'On' : 'Off'}</span><br>
+
+                        <span style="color: white;">Auto Throw: ${autoThrow ? 'On' : 'Off'}</span><br>
+                        <span style="color: white;">Skid Timer: ${skidTimer.toFixed(1)}</span><br>
+                        <span style="color: white;">Stumble Timer: ${stumbleTimer.toFixed(1)}</span><br>
+                        <span style="color: white;">Speed Boost Timer: ${speedBoostTimer.toFixed(1)}</span><br>
+                        <span style="color: white;">Throw Timer: ${throwTimer.toFixed(1)}</span><br>
+                        <span style="color: white;">Screen Shake Timer: ${screenShake.timer.toFixed(1)}</span><br>
+                        <span style="color: white;">Joystick X: ${joystick.x.toFixed(2)}</span><br>
+                        <span style="color: white;">Joystick Y: ${joystick.y.toFixed(2)}</span><br>
+                        <span style="color: white;">Camera Position: (${camera.position.x.toFixed(1)}, ${camera.position.y.toFixed(1)}, ${camera.position.z.toFixed(1)})</span><br>
+                        <span style="color: white;">Skier Position: (${skier.position.x.toFixed(1)}, ${skier.position.y.toFixed(1)}, ${skier.position.z.toFixed(1)})</span><br>
+                        <span style="color: white;">Snowballs Used: ${snowballsUsed}</span><br>
+                        <span style="color: white;">Snowballs Left: ${snowballAmmo}</span><br>  
+                        <span style="color: white;">Snowballs Thrown: ${snowballsUsed}</span><br>
+                        <span style="color: white;">Snowballs Hit: ${npcsHit}</span><br>
+                        <span style="color: white;">Snowballs Missed: ${snowballs.length}</span><br>
+                        <span style="color: white;">Distance to Finish: ${finishDistance.toFixed()} m</span><br>
+                    `;
+                    updateMiniMap();
+                    updateSideView();
+                    updateProgressBar();
+                }
+                renderer.render(scene, camera);
+            } catch (error) {
+                console.error('Error in animate:', error);
+                gameOver = true;
+            }
+        }
+
+        function showBonus(text) {
+            const bonusEl = document.getElementById('bonus');
+            bonusEl.textContent = text;
+            bonusEl.style.display = 'block';
+            setTimeout(() => bonusEl.style.display = 'none', 1000);
+        }
+
+        function completeLevel() {
+            gameOver = true;
+            document.getElementById('levelComplete').style.display = 'block';
+            document.getElementById('levelStats').innerHTML = `
+                <span style="color: cyan;">Level: ${level}</span><br>
+                <span style="color: yellow; font-size: 32px;">Score: ${score}</span><br>
+                <span style="color: orange; font-size: 32px;">Time: ${time.toFixed(1)}s</span><br>
+                <span style="color: white;">Speed: ${currentSpeed.toFixed(1)} m/s</span><br>
+                <span style="color: magenta;">Snowballs Used: ${snowballsUsed}</span><br>
+                <span style="color: white;">NPCs Hit: ${npcsHit}</span>
+            `;
+            document.getElementById('miniMap').style.display = 'none';
+            document.getElementById('sideView').style.display = 'none';
+            document.getElementById('progressBar').style.display = 'none';
+            document.getElementById('toggleCamera').style.display = 'none';
+        }
+
+        function endGame() {
+            gameOver = true;
+            document.getElementById('gameOver').style.display = 'block';
+            document.getElementById('finalStats').innerHTML = `
+                Level: ${level}<br>
+                Score: ${score}<br>
+                Time: ${time.toFixed(1)}s<br>
+                Speed: ${currentSpeed.toFixed(1)} m/s<br>
+                Snowballs Used: ${snowballsUsed}<br>
+                NPCs Hit: ${npcsHit}
+            `;
+            document.getElementById('miniMap').style.display = 'none';
+            document.getElementById('sideView').style.display = 'none';
+            document.getElementById('progressBar').style.display = 'none';
+            document.getElementById('toggleCamera').style.display = 'none';
+        }
+
+        function nextLevel() {
+            gameOver = false;
+            level++;
+            lives = 3;
+            score = 0;
+            time = 0;
+            currentSpeed = 0;
+            snowballAmmo = 20;
+            snowballsUsed = 0;
+            npcsHit = 0;
+            speedBoostTimer = 0;
+            throwTimer = 0;
+            autoPlay = false;
+            autoThrow = true;
+            snowballCooldown = 0;
+            stumbleTimer = 0;
+            skidTimer = 0;
+            screenShake.active = false;
+            cameraMode = 'default';
+            flyAroundAngle = 0;
+            miniMapZoom = 2.0;
+            document.getElementById('toggleCamera').textContent = 'Camera: Default';
+            mainTrails.left.forEach(particle => scene.remove(particle));
+            mainTrails.right.forEach(particle => scene.remove(particle));
+            npcTrails.forEach(trail => {
+                trail.left.forEach(particle => scene.remove(particle));
+                trail.right.forEach(particle => scene.remove(particle));
+            });
+            mainTrails = { left: [], right: [] };
+            npcTrails = [];
+            scene.clear();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.Fog(0x87CEEB, 20, 150);
+            setupGame();
+            document.getElementById('levelComplete').style.display = 'none';
+            document.getElementById('miniMap').style.display = 'block';
+            document.getElementById('sideView').style.display = 'block';
+            document.getElementById('progressBar').style.display = 'block';
+            document.getElementById('stats').style.display = 'block';
+            document.getElementById('toggleCamera').style.display = 'block';
+            resetJoystick();
+            clock = new THREE.Clock();
+            animate();
+        }
+
+        function restartGame() {
+            gameOver = false;
+            level = 1;
+            lives = 3;
+            score = 0;
+            time = 0;
+            currentSpeed = 0;
+            snowballAmmo = 20;
+            snowballsUsed = 0;
+            npcsHit = 0;
+            speedBoostTimer = 0;
+            throwTimer = 0;
+            autoPlay = false;
+            autoThrow = true;
+            snowballCooldown = 0;
+            stumbleTimer = 0;
+            skidTimer = 0;
+            screenShake.active = false;
+            cameraMode = 'default';
+            flyAroundAngle = 0;
+            miniMapZoom = 2.0;
+            document.getElementById('toggleCamera').textContent = 'Camera: Default';
+            mainTrails.left.forEach(particle => scene.remove(particle));
+            mainTrails.right.forEach(particle => scene.remove(particle));
+            npcTrails.forEach(trail => {
+                trail.left.forEach(particle => scene.remove(particle));
+                trail.right.forEach(particle => scene.remove(particle));
+            });
+            mainTrails = { left: [], right: [] };
+            npcTrails = [];
+            scene.clear();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.Fog(0x87CEEB, 20, 150);
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('welcome').style.display = 'block';
+            document.getElementById('miniMap').style.display = 'none';
+            document.getElementById('sideView').style.display = 'none';
+            document.getElementById('progressBar').style.display = 'none';
+            document.getElementById('toggleCamera').style.display = 'none';
+            resetJoystick();
+            clock = new THREE.Clock();
+            animate();
+        }
+
+        init();
+        // startGame(); // Uncomment for testing
+    </script>
 </body>
 </html>
